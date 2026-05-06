@@ -1,0 +1,80 @@
+---
+title: Experiment types
+description: All six experiment types and when to use each one.
+---
+
+## Theme test
+
+Tests two complete Shopify themes against each other. Best for testing large-scale design changes.
+
+**How it works:** Variant visitors are redirected with `?preview_theme_id=<id>` which loads your unpublished theme. Shopify's preview bar is hidden automatically.
+
+**Setup:**
+1. Duplicate your live theme in **Online Store → Themes**
+2. Make your changes to the duplicate
+3. In the variant configuration, select the duplicate theme from the dropdown
+
+<Warning>
+  Only one theme test can run at a time. Running two simultaneous theme tests will cause redirect conflicts.
+</Warning>
+
+---
+
+## Section / Content test
+
+Injects different HTML content into a specific section of a page. Best for testing headlines, hero copy, banners, or CTAs.
+
+**How it works:** The Variant Content app block renders an invisible container. On page load, the JS injects the assigned variant's HTML before the page is revealed — no content flash.
+
+**Setup:**
+1. In Theme Editor, add the **Variant Content** app block to the section you want to test
+2. Set the block's **Experiment ID** to your experiment's ID (found in the Overview tab)
+3. In the variant configuration, paste the HTML you want to show
+
+See [Variant Content block](/setup/variant-content) for full setup instructions.
+
+---
+
+## Price test
+
+Shows different prices to different visitor segments. Best for testing price sensitivity.
+
+**How it works:** The JS rewrites matching price elements in the DOM using CSS selectors. The actual checkout price is not changed — this is a display-level test. Use with caution and consider the implications for trust.
+
+**Configuration options:**
+- **Percentage discount** — e.g. 10% off shows the price 10% lower
+- **Fixed price** — e.g. shows $29.99 regardless of the original price
+
+---
+
+## URL redirect test
+
+Routes variant visitors to a completely different URL. Best for testing landing pages, collection pages, or alternate flows.
+
+**How it works:** On page load, variant visitors are redirected via `window.location.replace()` before the page is shown. No page flash.
+
+**Use cases:**
+- Testing a new landing page vs the current one
+- Comparing two different collection layouts at different URLs
+- Testing a simplified checkout flow
+
+---
+
+## Template test
+
+Tests two different Shopify page templates (`.json` files) against each other. Best for testing full page layout changes — product pages, collection pages, homepages.
+
+**How it works:** Variant visitors are redirected to `?view=<suffix>` which loads the alternate Shopify template server-side. The full Liquid template renders — sections, schema, everything.
+
+**Setup:**
+1. In your theme code, duplicate the template (e.g. `product.json` → `product.my-test.json`)
+2. Make layout changes to the duplicate in the Theme Editor
+3. In the experiment, select the template type and choose your alternate template from the dropdown
+
+See [Template tests](/setup/template-tests) for full setup instructions.
+
+---
+
+## Page test
+
+Like a Section test but targets an entire page container. Uses the same HTML injection mechanism via the Variant Content block.

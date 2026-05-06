@@ -1,0 +1,47 @@
+---
+title: Segments
+description: Target your experiment to a specific subset of visitors.
+---
+
+## What is a segment?
+
+A segment is a set of rules that filters which visitors are eligible for an experiment. Only visitors matching the segment will be bucketed — everyone else sees the default experience.
+
+**Use cases:**
+- Test a change only on mobile visitors
+- Run a campaign-specific experiment for paid traffic (`utm_source = google`)
+- Test a new landing page only for visitors from a specific referrer
+
+## Creating a segment
+
+Go to **Segments → New segment** and define your rules. Rules can be combined with AND or OR logic.
+
+### Available fields
+
+| Field | Values | Evaluated |
+|---|---|---|
+| `device` | `mobile`, `tablet`, `desktop` | Client-side (window width) |
+| `utmSource` | Any string | Client-side (URL param) |
+| `utmMedium` | Any string | Client-side (URL param) |
+| `utmCampaign` | Any string | Client-side (URL param) |
+| `referrer` | Any string | Client-side (document.referrer) |
+
+### Operators
+
+| Operator | Meaning |
+|---|---|
+| `eq` | Exactly equals |
+| `neq` | Does not equal |
+| `contains` | String contains |
+
+## Assigning a segment to an experiment
+
+On the experiment **Overview** tab, use the **Segment** dropdown to assign a saved segment. You can change this at any time, even on a running experiment.
+
+## Client-side evaluation
+
+Segment rules are evaluated in the browser before any bucketing happens. Fields like `device`, `utmSource`, and `referrer` are available immediately. Server-side fields (country, customer type) are not yet supported — rules with unknown fields default to allowing the visitor through.
+
+<Note>
+  Device detection uses `window.innerWidth` at script execution time: `< 768px` = mobile, `< 1024px` = tablet, `≥ 1024px` = desktop.
+</Note>

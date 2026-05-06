@@ -1,0 +1,51 @@
+---
+title: Reading results
+description: How to interpret the Results tab and decide when to end an experiment.
+---
+
+## Results tab
+
+The **Results** tab on each experiment shows a table with one row per variant. Results are computed by the hourly rollup job, or on demand when you click **↻ Refresh results**.
+
+## Funnel overview
+
+At the top of every experiment page, the funnel shows aggregate stats across all variants:
+
+| Metric | Source |
+|---|---|
+| Visitors | Unique visitor IDs allocated to the experiment |
+| Sessions | PAGE_VIEW events |
+| Add to Cart | ADD_TO_CART events |
+| Checkout | INITIATE_CHECKOUT events |
+| Orders | Orders attributed via cart attributes |
+| Revenue | Order revenue attributed to the experiment |
+
+## Conclusion banner
+
+The banner above the results table tells you where the experiment stands:
+
+| State | Meaning |
+|---|---|
+| **Collecting data** | Fewer than 100 sessions per variant — too early to draw conclusions |
+| **Not yet significant** | Enough data but `p ≥ 0.05` — keep running |
+| **Ready to conclude** | `p < 0.05` — results are statistically significant |
+
+## When to stop
+
+<Warning>
+  Don't stop an experiment just because you see a positive trend early. Early results are volatile and will often revert. The minimum recommended runtime is 7 days.
+</Warning>
+
+Stop the experiment when **all three** conditions are met:
+1. At least 7 days have elapsed (one full day-of-week cycle)
+2. You have at least 100 sessions per variant
+3. `p < 0.05`
+
+If an experiment is running for 4+ weeks with no significance, the effect size is likely too small to be meaningful — consider ending it.
+
+## Guardrails
+
+The **Auto-stop guardrails** on the Overview tab can automatically pause your experiment if:
+
+- **Sample Ratio Mismatch** — visitor allocation drifts significantly from target weights (broken assignment pipeline)
+- **Control CVR drop** — your control variant's conversion rate drops >20% (broken variant hurting the store baseline)

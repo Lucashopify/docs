@@ -1,0 +1,48 @@
+---
+title: Variant Content block
+description: Place this app block in Theme Editor to run Section and Page tests.
+---
+
+The **Variant Content** block is a theme app extension block that acts as a placeholder container. When the page loads, Split Tester injects the assigned variant's HTML into it before revealing the page.
+
+This is required for **Section** and **Page** experiment types.
+
+## Add the block
+
+1. In Shopify Admin, go to **Online Store → Themes → Customize**
+2. Navigate to the section or page where you want the test content to appear
+3. Click **Add block** (or **Add section** depending on your theme)
+4. Find **Split Tester — Variant Content** under Apps
+5. In the block settings, paste your **Experiment ID** (found in the experiment's Overview tab)
+6. Save
+
+## In design mode
+
+In the Theme Editor, the block shows a labeled placeholder so you can see where it is:
+
+```
+Split Test — Variant Content
+Experiment ID: cm3xyz...
+```
+
+## In production
+
+On the live storefront, the block renders as a hidden `div`:
+
+```html
+<div data-spt-section="cm3xyz..." style="visibility:hidden"></div>
+```
+
+The Split Tester script injects the variant HTML into this container on `DOMContentLoaded` — before the page is revealed — so visitors never see a flash of wrong content.
+
+## Multiple blocks
+
+You can place multiple Variant Content blocks on the same page, each with a different Experiment ID. This lets you run independent tests on different sections of the same page.
+
+## Control variant
+
+The control variant has no HTML configured — it uses whatever the theme renders by default in that section. The Variant Content block stays hidden for control visitors (unless the section has its own default content above/below the block).
+
+<Tip>
+  If you want the control to show specific content too, add a second Variant Content block for the control, or use the standard Theme Editor content fields for that section.
+</Tip>

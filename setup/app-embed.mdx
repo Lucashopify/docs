@@ -1,0 +1,40 @@
+---
+title: Enable the app embed
+description: Turn on the Split Tester tracking script in your Shopify theme.
+---
+
+The app embed loads the Split Tester JavaScript on every storefront page. This script handles visitor identification, variant assignment, event tracking, and applying test changes (redirects, theme swaps, content injection).
+
+**Without it, no experiments will run.**
+
+## Steps
+
+1. In your Shopify Admin, go to **Online Store → Themes**
+2. On your live theme, click **Customize**
+3. In the Theme Editor, click the **App embeds** icon in the left sidebar (puzzle piece)
+4. Find **Split Tester** and toggle it **on**
+5. Click **Save**
+
+<Frame>
+  <img src="/images/app-embed.png" alt="App embeds panel in Shopify Theme Editor" />
+</Frame>
+
+## Verify it's working
+
+After enabling, visit any page on your store. Then go to **Get started** in the Split Tester dashboard — Step 1 will show as complete once the first storefront event is received.
+
+You can also open your browser console and check for `window.__SPT_VID__` — if it's set, the embed is active.
+
+## Performance
+
+The embed script is served from Shopify's CDN via the theme app extension. It:
+- Runs before page render to prevent content flash
+- Has a 2-second safety timer to always reveal the page even if something goes wrong
+- Uses `navigator.sendBeacon` for event tracking (non-blocking)
+- Reads experiment config from a metafield (zero API calls on the critical path)
+
+## Multiple themes
+
+The embed only needs to be enabled on your **live theme**. If you use a development theme for testing, you'll need to enable it there separately.
+
+If you switch your live theme, re-enable the embed on the new theme.

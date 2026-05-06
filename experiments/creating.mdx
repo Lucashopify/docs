@@ -1,0 +1,41 @@
+---
+title: Creating an experiment
+description: Step-by-step guide to setting up a new A/B experiment.
+---
+
+## New experiment form
+
+Go to **Experiments → New experiment** and fill in:
+
+| Field | Description |
+|---|---|
+| **Name** | Internal label — merchants see this, visitors don't |
+| **Hypothesis** | What you expect to happen and why. e.g. "Showing a urgency badge will increase ATC rate" |
+| **Type** | What you're testing. See [Experiment types](/experiments/types) |
+| **Traffic allocation** | Percentage of visitors included in the experiment (the rest see the default) |
+| **Segment** | Optional — restrict the experiment to a specific audience |
+
+## Variants
+
+Every experiment has at least two variants:
+
+- **Control** — the current experience, unchanged
+- **Variant B** — the treatment you're testing
+
+You can rename these anything. Traffic is split 50/50 by default. After creating the experiment, you can adjust weights per variant from the Variants tab.
+
+<Note>
+  Variant weights must sum to exactly 100. If they don't, visitors in the gap won't be assigned to any variant and won't be tracked.
+</Note>
+
+## After creating
+
+You'll be taken to the experiment detail page. From here:
+
+1. Go to the **Variants** tab and click **Configure** on each variant to set up the specific changes
+2. Check the **Overview** tab to verify settings
+3. Click **Start experiment** when ready
+
+## Editing a running experiment
+
+You can change the experiment's segment at any time from the Overview tab without restarting. Changing variant weights or content on a running experiment is not recommended — it can introduce bias into results collected before the change.

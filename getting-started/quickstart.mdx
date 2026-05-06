@@ -1,0 +1,49 @@
+---
+title: Quick start
+description: Install Split Tester and run your first A/B test in under 10 minutes.
+---
+
+## 1. Install the app
+
+Install Split Tester from the Shopify App Store. You'll be redirected to the dashboard after authentication.
+
+## 2. Enable the app embed
+
+The app embed loads the Split Tester tracking script on every storefront page. Without it, no experiments will run.
+
+1. In your Shopify Admin, go to **Online Store → Themes**
+2. Click **Customize** on your live theme
+3. In the Theme Editor, click **App embeds** (the puzzle piece icon in the left sidebar)
+4. Toggle **Split Tester** on
+5. Save
+
+<Info>
+  After enabling, visit any page on your store. The Get Started page in the dashboard will confirm the embed is active once it receives the first event.
+</Info>
+
+## 3. Create an experiment
+
+1. Go to **Experiments → New experiment**
+2. Give it a name and hypothesis
+3. Choose an experiment type (Theme, Section, Price, URL Redirect, or Template)
+4. Configure your variants
+5. Set traffic allocation and optionally target a segment
+6. Click **Create experiment**
+
+## 4. Configure your variants
+
+Each experiment has a **Control** (your current experience) and one or more treatment variants. Click **Configure** on any variant to set it up — select a theme, enter a price adjustment, paste HTML content, etc.
+
+## 5. Start the experiment
+
+On the experiment detail page, click **Start experiment**. Visitors will immediately begin being bucketed and tracked.
+
+<Warning>
+  Run experiments for at least 7 days before drawing conclusions. Stopping early risks acting on random variation — results need a full day-of-week cycle to stabilise.
+</Warning>
+
+## 6. Read your results
+
+Go to the **Results** tab on the experiment. Click **↻ Refresh results** to compute the latest stats, or wait for the automatic hourly rollup.
+
+When `p < 0.05`, results are statistically significant and the dashboard will show you the winning variant.

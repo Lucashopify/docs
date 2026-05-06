@@ -1,0 +1,51 @@
+---
+title: Statistical significance
+description: How Split Tester determines if results are real and not random chance.
+---
+
+## What is statistical significance?
+
+When you run an A/B test, both variants will show slightly different conversion rates just by chance — even if the change has no real effect. Statistical significance tells you how likely the observed difference is due to chance.
+
+Split Tester uses a **two-proportion z-test** to calculate a p-value.
+
+## P-value
+
+The p-value is the probability of observing a difference this large (or larger) if there were actually no real effect.
+
+| P-value | Interpretation |
+|---|---|
+| `p < 0.05` | Significant — less than 5% chance the result is random |
+| `p ≥ 0.05` | Not yet significant — keep running |
+
+A p-value of `0.03` means there's a 3% chance you'd see a difference this large by random chance alone.
+
+<Warning>
+  p < 0.05 is not proof the effect is real. It means you have 95% confidence. In practice, always combine statistical significance with business sense — a 0.1% CVR lift may be significant but not worth the engineering cost to ship.
+</Warning>
+
+## Confidence level
+
+Split Tester uses 95% confidence (α = 0.05) as the threshold. This is the standard for e-commerce A/B testing. A higher threshold (99%) reduces false positives but requires more data.
+
+## Sample Ratio Mismatch (SRM)
+
+An SRM occurs when the actual visitor split between variants is significantly different from the configured weights (e.g. you set 50/50 but see 60/40 in practice). This indicates a problem in the assignment pipeline — results from an SRM-flagged experiment cannot be trusted.
+
+Split Tester detects SRM using a chi-squared test (p < 0.01, requires ≥100 visitors per variant). If detected, a warning is shown in the results table and the auto-stop guardrail can pause the experiment.
+
+**Common causes of SRM:**
+- Bot traffic disproportionately hitting one variant
+- Caching that bypasses the bucketing script
+- Two simultaneous theme tests conflicting
+- Variant causing high bounce rate before the event fires
+
+## Peeking
+
+Peeking means checking results and stopping early when you see significance — before you planned to. This leads to a high false-positive rate because p-values fluctuate over the life of an experiment and will cross 0.05 by chance.
+
+**Split Tester's guardrails:**
+- Minimum runtime warning (default 7 days)
+- The conclusion banner only appears after ≥100 sessions per variant
+
+Resist the urge to stop early, even when results look good.

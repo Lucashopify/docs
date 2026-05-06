@@ -1,0 +1,53 @@
+---
+title: Metrics explained
+description: Every metric in the results table and what it tells you.
+---
+
+## Results table columns
+
+| Column | Definition |
+|---|---|
+| **Sessions** | Number of PAGE_VIEW events for this variant |
+| **Orders** | Attributed orders (from webhooks via cart attributes) |
+| **CVR** | Orders ÷ Sessions — the conversion rate |
+| **ATC Rate** | Add-to-cart events ÷ Sessions |
+| **Checkout Rate** | Initiate-checkout events ÷ Sessions |
+| **Revenue** | Total order revenue attributed to this variant |
+| **Rev / visitor** | Revenue ÷ Sessions — revenue per visitor |
+| **AOV** | Revenue ÷ Orders — average order value |
+| **Lift** | Percentage improvement in CVR vs control |
+
+## Which metric to optimise for?
+
+For most Shopify stores, **CVR** (conversion rate) is the primary metric. It directly measures whether the variant drives more purchases.
+
+**Revenue per visitor** is better than CVR when you're testing price changes or upsell flows — a variant could have lower CVR but higher AOV, making it more profitable overall.
+
+**ATC Rate** is a useful leading indicator — it moves faster than CVR so you can spot direction early. Don't conclude from ATC alone.
+
+## Lift
+
+Lift is calculated as:
+
+```
+lift = (variantCVR - controlCVR) / controlCVR
+```
+
+A lift of `+12.5%` means the variant converts 12.5% more visitors than control, not 12.5 percentage points more.
+
+## Sample size guidance
+
+As a rough guide, you need approximately:
+
+| CVR | Minimum sessions per variant for 80% power |
+|---|---|
+| 1% | ~10,000 |
+| 2% | ~5,000 |
+| 5% | ~2,000 |
+| 10% | ~1,000 |
+
+These are estimates for detecting a 10% relative lift. Smaller expected lifts require more sessions.
+
+## Novelty effect
+
+A novelty effect warning appears when a variant's CVR was significantly higher in the first 48 hours than in subsequent days (≥40% drop-off). This usually means returning customers are inflating early results because the change feels novel. Wait for the effect to stabilise before concluding.

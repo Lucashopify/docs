@@ -1,12 +1,12 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "almond",
-  "name": "Product Guide",
-  "description": "Step-by-step guides for every product—platform setup, analytics, and integrations in one place.",
+  "name": "Split Tester",
+  "description": "A/B testing for Shopify — run experiments on themes, prices, content, and more.",
   "colors": {
-    "primary": "#166E3F",
-    "light": "#26BD6C",
-    "dark": "#166E3F"
+    "primary": "#111111",
+    "light": "#555555",
+    "dark": "#111111"
   },
   "favicon": "/favicon.ico",
   "icons": {
@@ -16,62 +16,63 @@
     "eyebrows": "breadcrumbs"
   },
   "contextual": {
-    "options": ["copy", "view", "assistant", "mcp", "add-mcp"]
+    "options": ["copy", "view", "assistant"]
   },
   "navigation": {
     "global": {
       "anchors": [
         {
-          "anchor": "Home",
-          "icon": "house",
-          "href": "/"
+          "anchor": "Dashboard",
+          "icon": "layout-dashboard",
+          "href": "https://amused-bravery-production-e9f7.up.railway.app/dashboard"
         },
         {
-          "anchor": "Changelog",
-          "icon": "scroll-text",
-          "href": "https://www.mintlify.com/docs/changelog"
-        },
-        {
-          "anchor": "Help",
+          "anchor": "Support",
           "icon": "life-buoy",
-          "href": "https://www.mintlify.com/docs/contact-support"
+          "href": "mailto:support@splittester.com"
         }
       ]
     },
     "directory": "card",
     "groups": [
       {
-        "group": "Platform",
-        "icon": "layers",
+        "group": "Getting Started",
+        "icon": "rocket",
         "expanded": true,
         "pages": [
-          "platform/quickstart",
-          "platform/key-concepts",
-          "platform/configuration/settings",
-          "platform/configuration/user-management",
-          "platform/administration/roles-permissions"
+          "getting-started/quickstart",
+          "getting-started/how-it-works"
         ]
       },
       {
-        "group": "Analytics",
+        "group": "Experiments",
+        "icon": "flask-conical",
+        "expanded": true,
+        "pages": [
+          "experiments/creating",
+          "experiments/types",
+          "experiments/traffic-allocation",
+          "experiments/segments"
+        ]
+      },
+      {
+        "group": "Results",
         "icon": "chart-bar",
         "expanded": true,
         "pages": [
-          "analytics/quickstart",
-          "analytics/connect-data",
-          "analytics/dashboards/create-dashboard",
-          "analytics/reports/scheduled-reports"
+          "results/overview",
+          "results/metrics",
+          "results/significance"
         ]
       },
       {
-        "group": "Integrations",
-        "icon": "plug",
+        "group": "Theme Setup",
+        "icon": "paintbrush",
         "expanded": true,
         "pages": [
-          "integrations/quickstart",
-          "integrations/authentication",
-          "integrations/connectors/crm",
-          "integrations/webhooks/configure"
+          "setup/app-embed",
+          "setup/variant-content",
+          "setup/template-tests"
         ]
       }
     ]
@@ -84,14 +85,11 @@
     "links": [],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Open Dashboard",
+      "href": "https://amused-bravery-production-e9f7.up.railway.app/dashboard"
     }
   },
   "footer": {
-    "socials": {
-      "x": "https://x.com/yourcompany",
-      "linkedin": "https://linkedin.com/company/yourcompany"
-    }
+    "socials": {}
   }
 }

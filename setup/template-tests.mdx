@@ -1,0 +1,77 @@
+---
+title: Template tests
+description: A/B test full Shopify page templates — product pages, collections, and more.
+---
+
+Template tests let you compare two completely different page layouts by leveraging Shopify's native alternate template system. Variant visitors are routed to `?view=<suffix>` which loads your alternate template server-side — no JavaScript injection needed.
+
+## Supported template types
+
+- Product pages (`templates/product.json`)
+- Collection pages (`templates/collection.json`)
+- Regular pages (`templates/page.json`)
+- Homepage (`templates/index.json`)
+- Blog listing (`templates/blog.json`)
+- Article pages (`templates/article.json`)
+
+## Setup
+
+### Step 1 — Duplicate your template
+
+In your Shopify theme code (use the Theme Editor's **Edit code** view, or a local development setup):
+
+1. Go to the `templates/` directory
+2. Copy your target template (e.g. `product.json`)
+3. Paste it with a new name — add a suffix after the type: `product.my-test.json`
+
+The suffix (`my-test`) is what you'll enter in Split Tester.
+
+### Step 2 — Customise the duplicate
+
+Make your layout changes in the Theme Editor:
+
+1. In **Online Store → Themes → Customize**, open the template dropdown (top center)
+2. Select your alternate template (e.g. **Products / my-test**)
+3. Rearrange sections, add/remove blocks, change settings
+4. Save
+
+### Step 3 — Create the experiment
+
+1. In Split Tester, go to **New experiment** and choose **Template test**
+2. Select the **Template type** (e.g. Product)
+3. The **Variant template** dropdown will show all alternate templates found in your live theme
+4. Select your duplicate template and create the experiment
+
+### Step 4 — Configure and start
+
+The control variant uses the default template automatically — no configuration needed. The variant is pre-configured with the view name from Step 3. Click **Start experiment**.
+
+## How routing works
+
+When a variant visitor lands on a product page:
+
+1. The JS checks if `?view=my-test` is in the URL
+2. If not, it redirects to the same URL with `?view=my-test` appended
+3. Shopify loads `templates/product.my-test.json` server-side
+4. All Liquid, sections, and metafields render normally
+
+The redirect happens before the page is revealed, so there's no flash.
+
+## Routing scope
+
+Template tests only redirect on matching URL patterns. A product template test won't append `?view=` to collection or homepage URLs.
+
+| Template type | Applied on |
+|---|---|
+| product | `/products/*` |
+| collection | `/collections/*` |
+| page | `/pages/*` |
+| index | `/` |
+| blog | `/blogs/<handle>` |
+| article | `/blogs/<handle>/<slug>` |
+
+## Notes
+
+- Shopify falls back to the default template if the alternate doesn't exist — so a misconfigured test won't break the page
+- The `?view=` parameter persists as visitors navigate within the same template type
+- No app block needed — this is entirely URL-based routing

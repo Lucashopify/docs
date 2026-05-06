@@ -1,0 +1,53 @@
+---
+title: Traffic allocation
+description: Control how many visitors enter your experiment and how they're split between variants.
+---
+
+## Experiment-level allocation
+
+The **traffic allocation** slider (5%–100%) controls what percentage of all visitors are included in the experiment. Visitors outside this allocation see the default experience and are not tracked.
+
+**Example:** With 50% traffic allocation and two 50/50 variants:
+- 50% of visitors are excluded (default experience)
+- 25% of visitors see the control
+- 25% of visitors see the variant
+
+This is useful for limiting exposure when testing risky changes, or for running multiple experiments simultaneously without full overlap.
+
+## Variant weights
+
+Each variant has a **traffic weight** (%). Weights across all variants must sum to exactly 100.
+
+The bucketing is cumulative — for weights of 50/50:
+- Visitors with bucket 0–49 → Control
+- Visitors with bucket 50–99 → Variant B
+
+For a 33/33/34 three-variant split:
+- Visitors with bucket 0–32 → Control
+- Visitors with bucket 33–65 → Variant B
+- Visitors with bucket 66–99 → Variant C
+
+<Warning>
+  If weights don't sum to 100, visitors in the gap will pass the allocation check but won't be assigned to any variant. They'll see the default experience and won't appear in results. The dashboard shows a warning banner when this happens.
+</Warning>
+
+## Bucketing is deterministic
+
+The same visitor always gets the same variant. Bucketing is based on:
+
+```
+bucket = hash(visitorId + ':' + experimentId) % 100
+```
+
+This means:
+- Refreshing the page doesn't re-randomise
+- Clearing the `spt_asgn` cookie and revisiting will re-assign (useful for testing)
+- Two different experiments use independent hashes, so a visitor can be in both simultaneously
+
+## Running multiple experiments
+
+Multiple experiments can run simultaneously. Each uses an independent hash so assignments don't interfere. Be aware that:
+
+- **Theme tests** conflict with each other (only one `preview_theme_id` can be active)
+- **Interaction effects** — if two experiments modify the same element, results will be confounded
+- Each experiment samples from 100% of visitors independently, so a visitor can be in both
