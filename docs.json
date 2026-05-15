@@ -1,12 +1,12 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "almond",
+  "theme": "mint",
   "name": "Split Tester",
-  "description": "A/B testing for Shopify — run experiments on themes, prices, content, and more.",
+  "description": "A/B testing for Shopify. Run experiments on themes, prices, content, and more.",
   "colors": {
-    "primary": "#111111",
-    "light": "#555555",
-    "dark": "#111111"
+    "primary": "#5b5bd6",
+    "light": "#7c7ce8",
+    "dark": "#4a4ab8"
   },
   "favicon": "/favicon.ico",
   "icons": {
