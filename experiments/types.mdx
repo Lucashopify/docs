@@ -1,80 +1,190 @@
 ---
 title: Experiment types
-description: All six experiment types and when to use each one.
+description: Every experiment type explained — what it tests, how it works technically, and when to use it.
+---
+
+Split Tester supports five experiment types. Choosing the right one depends on what you want to test and what your store supports.
+
+| Type | Best for | Shopify plan |
+|---|---|---|
+| Theme | Full design or layout changes | Any |
+| URL Redirect | Comparing two different pages or flows | Any |
+| Price (auto-setup) | Price testing without Shopify Plus | Any |
+| Price | Price testing with real server-side price changes | Shopify Plus only |
+| Section content | Headline, banner, CTA, or copy changes | Any |
+| Template | Full page layout changes on a single template | Any |
+
 ---
 
 ## Theme test
 
-Tests two complete Shopify themes against each other. Best for testing large-scale design changes.
+Tests two complete Shopify themes against each other. Best for large-scale design overhauls, navigation changes, or any change that spans multiple sections across the entire site.
 
-**How it works:** Variant visitors are redirected with `?preview_theme_id=<id>` which loads your unpublished theme. Shopify's preview bar is hidden automatically.
+### How it works
 
-**Setup:**
-1. Duplicate your live theme in **Online Store → Themes**
-2. Make your changes to the duplicate
-3. In the variant configuration, select the duplicate theme from the dropdown
+When a variant visitor loads any page, the JS appends `?preview_theme_id=<id>` to the URL and performs a `window.location.replace()` redirect. Shopify loads the unpublished duplicate theme in preview mode. The preview bar (the orange bar Shopify normally shows in preview mode) is hidden automatically via CSS.
+
+The redirect only fires if `?preview_theme_id` is not already in the URL, so subsequent page navigations within the same session work normally.
+
+### Setup
+
+1. In **Online Store → Themes**, click the **...** menu on your live theme and select **Duplicate**
+2. Make your design changes to the duplicate theme
+3. In Split Tester, create a new **Theme** experiment
+4. In the Variant B configuration, select the duplicate theme from the dropdown
+5. Start the experiment
 
 <Warning>
-  Only one theme test can run at a time. Running two simultaneous theme tests will cause redirect conflicts.
+  Only one theme test can run at a time. Two simultaneous theme tests will conflict because both will try to append `?preview_theme_id` to the URL. If you need to test multiple changes at once, make all changes in the same duplicate theme.
 </Warning>
 
----
+### Limitations
 
-## Section / Content test
-
-Injects different HTML content into a specific section of a page. Best for testing headlines, hero copy, banners, or CTAs.
-
-**How it works:** The Variant Content app block renders an invisible container. On page load, the JS injects the assigned variant's HTML before the page is revealed — no content flash.
-
-**Setup:**
-1. In Theme Editor, add the **Variant Content** app block to the section you want to test
-2. Set the block's **Experiment ID** to your experiment's ID (found in the Overview tab)
-3. In the variant configuration, paste the HTML you want to show
-
-See [Variant Content block](/setup/variant-content) for full setup instructions.
+- The theme preview URL is visible to visitors in the browser address bar. This does not affect the test but is worth knowing.
+- Theme tests apply to all pages simultaneously. You cannot scope a theme test to a single page type.
+- Shopify Plus stores with custom storefronts (Hydrogen) are not supported by this method.
 
 ---
 
-## Price test
+## URL Redirect test
 
-Shows different prices to different visitor segments. Best for testing price sensitivity.
+Routes a portion of visitors from one URL to another. Best for testing a new landing page against the current one, comparing two product page designs at different URLs, or testing an alternate checkout flow.
 
-**How it works:** The JS rewrites matching price elements in the DOM using CSS selectors. The actual checkout price is not changed — this is a display-level test. Use with caution and consider the implications for trust.
+### How it works
 
-**Configuration options:**
-- **Percentage discount** — e.g. 10% off shows the price 10% lower
-- **Fixed price** — e.g. shows $29.99 regardless of the original price
+You configure a **source URL** (where the redirect fires from) and a **destination URL** (where variant visitors are sent). When a variant visitor lands on the source URL, the JS fires `window.location.replace(destinationUrl)` before the page is shown. This replaces the history entry so the back button works correctly.
+
+The redirect only fires when the visitor is on the exact source URL. Visiting any other page on the store does not trigger a redirect, even if the visitor is assigned to the experiment.
+
+### Event scoping
+
+Events are scoped to the relevant URLs:
+- **Control sessions and events** are only counted when the visitor is on the source URL
+- **Variant sessions and events** are only counted when the visitor is on the destination URL
+
+This prevents inflating results with unrelated page views.
+
+### Setup
+
+1. Build your alternate page (or identify the destination URL you want to test)
+2. Create a **URL Redirect** experiment in Split Tester
+3. Enter the **source URL** (e.g. `/pages/landing-page`) — this is where the redirect fires from
+4. In Variant B configuration, enter the **destination URL** (e.g. `/pages/landing-page-v2`)
+5. Set your traffic split and start the experiment
+
+### Use cases
+
+- Testing a redesigned collection page at a new URL
+- Comparing a long-form vs short-form product description on separate pages
+- Sending paid ad traffic to an alternate landing page
 
 ---
 
-## URL redirect test
+## Price test (auto-setup, all plans)
 
-Routes variant visitors to a completely different URL. Best for testing landing pages, collection pages, or alternate flows.
+Tests a different price for a product on any Shopify plan. Split Tester duplicates the product automatically, sets the test price on the duplicate, and runs a URL Redirect experiment between the two product pages.
 
-**How it works:** On page load, variant visitors are redirected via `window.location.replace()` before the page is shown. No page flash.
+### How it works
 
-**Use cases:**
-- Testing a new landing page vs the current one
-- Comparing two different collection layouts at different URLs
-- Testing a simplified checkout flow
+When you create a Price (auto-setup) experiment:
+
+1. Split Tester calls the Shopify Admin API to duplicate your product
+2. The price adjustment is applied to all variants on the duplicate
+3. The duplicate is set to Active so it is reachable via URL
+4. A URL Redirect experiment is created: control visitors see the original product, variant visitors are redirected to the duplicate
+5. When you complete or archive the experiment, the duplicate product is automatically deleted
+
+### Setup
+
+1. Create a **Price test (auto-setup)** experiment
+2. Select the product you want to test
+3. Enter the price adjustment: either a percentage (e.g. -10%) or a fixed amount (e.g. -5.00)
+4. Set your traffic split and start the experiment
+
+<Note>
+  The duplicate product is named `[SPT] Your Product Name` and is not added to any collections. It is only reachable via direct URL. Visitors assigned to the variant are redirected to it automatically.
+</Note>
+
+### Limitations
+
+See [Price testing limitations](/price-testing/limitations) for a full list. Key ones for this method:
+
+- Different product URLs for control and variant — visitors who land directly on the original product URL will always be on the original price, regardless of variant
+- Does not work for ads that link directly to the product URL (the redirect only fires from the original URL)
+- Not suitable if your product is listed in Google Shopping (price discrepancy between product pages)
+
+For full details on this approach vs Shopify Plus price testing, see [Price testing: non-Plus stores](/price-testing/non-plus).
+
+---
+
+## Price test (Shopify Plus only)
+
+Tests a different price at checkout using Shopify's Cart Transform API. The price change is server-side — the customer pays the test price for real. Available on Shopify Plus only.
+
+### How it works
+
+1. The JS detects which product page the visitor is on and updates price elements in the DOM to show the test price
+2. When the visitor adds to cart, a hidden cart attribute (`spt_asgn`) is written to their cart recording their variant assignment
+3. When the visitor checks out, Split Tester's Cart Transform function reads the cart attribute and applies a price adjustment at the cart level
+4. The customer sees the test price in their cart and pays it at checkout
+
+This is a true price test — the customer actually pays the test price, not just sees it.
+
+### Setup
+
+See the full [Price testing: Shopify Plus](/price-testing/plus) guide for setup instructions, theme requirements, and troubleshooting.
+
+---
+
+## Section content test
+
+Injects different HTML content into a specific section of a page. Best for testing headlines, hero copy, banners, call-to-action buttons, trust badges, or any self-contained piece of content.
+
+### How it works
+
+You place the **Variant Content** app block in your Theme Editor at the location where you want the test content to appear. The block is invisible by default. On page load, the JS reads the visitor's variant assignment and injects the corresponding HTML into the block container before the page is revealed to the visitor. There is no visible flash of content.
+
+### Setup
+
+1. In **Experiments**, create a new **Section content** experiment and note the Experiment ID from the Overview tab
+2. In **Online Store → Themes → Customize**, navigate to the section or page you want to test
+3. Add the **Variant Content** app block (found under Apps)
+4. Set the block's **Experiment ID** field to your experiment's ID
+5. In the experiment's Variant B configuration, paste the HTML you want to show
+6. Start the experiment
+
+See [Variant Content block](/setup/variant-content) for detailed setup instructions.
+
+### What you can inject
+
+Any valid HTML: headings, paragraphs, images, buttons, embedded videos, product cards, countdown timers. Inline `<style>` tags and `<script>` tags are also supported — the script runs after injection.
+
+<Warning>
+  Injected scripts run after `DOMContentLoaded`. If your injected HTML relies on third-party scripts that are not already loaded on the page, they will not be available.
+</Warning>
 
 ---
 
 ## Template test
 
-Tests two different Shopify page templates (`.json` files) against each other. Best for testing full page layout changes — product pages, collection pages, homepages.
+Tests two different Shopify page templates (JSON templates) against each other. Best for testing full page layout changes on product pages, collection pages, or the homepage — where you want to rearrange sections, add/remove blocks, or test a completely different layout structure.
 
-**How it works:** Variant visitors are redirected to `?view=<suffix>` which loads the alternate Shopify template server-side. The full Liquid template renders — sections, schema, everything.
+### How it works
 
-**Setup:**
-1. In your theme code, duplicate the template (e.g. `product.json` → `product.my-test.json`)
-2. Make layout changes to the duplicate in the Theme Editor
-3. In the experiment, select the template type and choose your alternate template from the dropdown
+Shopify supports alternate templates via the `?view=` URL parameter. When `?view=my-test` is appended to a product URL, Shopify renders `templates/product.my-test.json` instead of `templates/product.json`. The full Liquid template renders normally — sections, metafields, and all theme settings work exactly as in the Theme Editor.
 
-See [Template tests](/setup/template-tests) for full setup instructions.
+When a variant visitor lands on a matching page type (e.g. any product page for a product template test), the JS appends `?view=<suffix>` to the URL and reloads the page with the alternate template.
 
----
+### Setup
 
-## Page test
+See [Template tests](/setup/template-tests) for step-by-step instructions including how to duplicate a template in the Theme Editor.
 
-Like a Section test but targets an entire page container. Uses the same HTML injection mechanism via the Variant Content block.
+### Differences from Theme tests
+
+| | Theme test | Template test |
+|---|---|---|
+| Scope | Entire store | Specific page type only |
+| What changes | Everything in the theme | Sections and layout for that template |
+| Shopify mechanism | `?preview_theme_id` | `?view=suffix` |
+| Multiple at once | One at a time | Multiple (different page types) |
+| Requires code access | No | Yes (to duplicate template file) |

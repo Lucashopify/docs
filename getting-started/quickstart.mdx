@@ -1,49 +1,134 @@
 ---
 title: Quick start
-description: Install Split Tester and run your first A/B test in under 10 minutes.
+description: Install Split Tester and run your first A/B test in under 15 minutes.
 ---
 
-## 1. Install the app
+## Step 1: Install the app
 
-Install Split Tester from the Shopify App Store. You'll be redirected to the dashboard after authentication.
+Install Split Tester from the Shopify App Store. After installation, you will be redirected to the Split Tester dashboard automatically.
 
-## 2. Enable the app embed
+If you are not redirected, open **Apps** in your Shopify Admin and click **Split Tester**.
 
-The app embed loads the Split Tester tracking script on every storefront page. Without it, no experiments will run.
+---
+
+## Step 2: Enable the app embed
+
+The app embed is the JavaScript that runs on every storefront page. It handles visitor identification, variant assignment, and all event tracking. Without it, no experiments will run and no data will be collected.
 
 1. In your Shopify Admin, go to **Online Store → Themes**
-2. Click **Customize** on your live theme
-3. In the Theme Editor, click **App embeds** (the puzzle piece icon in the left sidebar)
-4. Toggle **Split Tester** on
-5. Save
+2. On your live theme, click **Customize**
+3. In the Theme Editor, click the **App embeds** icon in the left sidebar (the puzzle piece icon)
+4. Find **Split Tester** in the list and toggle it **on**
+5. Click **Save** in the top-right corner
 
 <Info>
-  After enabling, visit any page on your store. The Get Started page in the dashboard will confirm the embed is active once it receives the first event.
+  The app embed only needs to be enabled once per theme. If you later switch your live theme, you will need to re-enable it on the new theme.
 </Info>
 
-## 3. Create an experiment
+### Verify it is working
 
-1. Go to **Experiments → New experiment**
-2. Give it a name and hypothesis
-3. Choose an experiment type (Theme, Section, Price, URL Redirect, or Template)
-4. Configure your variants
-5. Set traffic allocation and optionally target a segment
-6. Click **Create experiment**
+After enabling, visit any page on your storefront. Then return to the Split Tester dashboard and open the **Get Started** page. Step 1 will show a green checkmark once the dashboard receives its first storefront event — this usually takes under 30 seconds.
 
-## 4. Configure your variants
+You can also verify directly in your browser: open the browser console on any storefront page and type `window.__SPT_VID__`. If it returns a string (your visitor ID), the embed is active.
 
-Each experiment has a **Control** (your current experience) and one or more treatment variants. Click **Configure** on any variant to set it up — select a theme, enter a price adjustment, paste HTML content, etc.
+---
 
-## 5. Start the experiment
+## Step 3: Create your first experiment
 
-On the experiment detail page, click **Start experiment**. Visitors will immediately begin being bucketed and tracked.
+Go to **Experiments** in the sidebar and click **New experiment**.
+
+Fill in the form:
+
+| Field | What to enter |
+|---|---|
+| **Name** | A short internal label, e.g. "Homepage hero CTA test" |
+| **Hypothesis** | What you expect to happen and why, e.g. "Changing the CTA from 'Shop now' to 'View collection' will increase clicks" |
+| **Type** | Choose the experiment type that fits your test. See [Experiment types](/experiments/types) if you are unsure. |
+| **Traffic allocation** | Start with 100% to get data faster. Lower this if you want to limit exposure. |
+| **Segment** | Leave blank to include all visitors, or pick a saved segment. |
+
+Click **Create experiment**.
+
+---
+
+## Step 4: Configure your variants
+
+After creating the experiment, you will land on the experiment detail page. Every experiment has at least two variants:
+
+- **Control** - the current experience, unchanged. No setup needed.
+- **Variant B** - the treatment you are testing. Click **Configure** to set it up.
+
+What you configure depends on the experiment type:
+
+| Type | What you configure on Variant B |
+|---|---|
+| Theme | Select a duplicate unpublished theme |
+| URL Redirect | Enter the destination URL |
+| Price (Plus) | Choose the product and set a price adjustment |
+| Price (non-Plus) | Choose the source product and price adjustment (app duplicates automatically) |
+| Section content | Paste the HTML to inject into the Variant Content block |
+| Template | Select an alternate page template |
 
 <Warning>
-  Run experiments for at least 7 days before drawing conclusions. Stopping early risks acting on random variation — results need a full day-of-week cycle to stabilise.
+  For Theme tests, you must first duplicate your live theme in **Online Store → Themes** and make your changes to the duplicate before you can select it here.
 </Warning>
 
-## 6. Read your results
+---
 
-Go to the **Results** tab on the experiment. Click **↻ Refresh results** to compute the latest stats, or wait for the automatic hourly rollup.
+## Step 5: Start the experiment
 
-When `p < 0.05`, results are statistically significant and the dashboard will show you the winning variant.
+On the experiment Overview tab, click **Start experiment**. The status will change to **Running**.
+
+From this point, visitors will be assigned to variants and tracked. Assignments are persisted in a cookie for one year, so returning visitors always see the same variant.
+
+---
+
+## Step 6: Wait for data
+
+Check back after a few days. A few important rules:
+
+- **Do not stop early.** Results are unreliable in the first few days. Wait at least 7 days before drawing any conclusions.
+- **Do not change variant weights mid-experiment.** This invalidates any data collected before the change.
+- **Refresh results manually** if you want the latest numbers before the hourly rollup runs: go to the **Results** tab and click **Refresh results**.
+
+---
+
+## Step 7: Read your results
+
+Go to the **Results** tab. The table shows one row per variant with sessions, orders, CVR, revenue per visitor, and statistical significance.
+
+When `p < 0.05`, the result is statistically significant. The conclusion banner at the top of the page will tell you which variant is winning.
+
+See [Reading results](/results/overview) for a full explanation of every metric and how to interpret them.
+
+---
+
+## Step 8: End the experiment
+
+Once you have a clear winner with significant results and at least 7 days of data, go to the Overview tab and click **Complete experiment** (if the test variant won) or **Archive experiment** (if the control won or you want to discard).
+
+- **Completed** - the winning variant is now the default. For theme tests, publish the winning theme manually. For price tests, update the product price manually. For redirect tests, you can remove the experiment.
+- **Archived** - the test variant is discarded. All visitors revert to the control immediately.
+
+For price experiments on non-Plus stores using the auto-setup option, the duplicate product is deleted automatically when you complete or archive.
+
+---
+
+## Troubleshooting
+
+**Visitors are not being tracked**
+
+- Confirm the app embed is enabled and saved in the Theme Editor.
+- Check for browser extensions that block tracking scripts (ad blockers). Test in an incognito window.
+- Check the browser console for JavaScript errors from Split Tester.
+
+**Results are not updating**
+
+- Click **Refresh results** on the Results tab to trigger an immediate rollup.
+- Make sure you have at least a few sessions recorded. Results will not appear until there is data.
+
+**The embed shows as active but experiments are not running**
+
+- Confirm the experiment status is **Running** (not Draft or Paused).
+- Make sure variant weights sum to exactly 100.
+- If using a segment, make sure your test visitor matches the segment rules.

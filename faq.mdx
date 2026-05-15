@@ -1,0 +1,152 @@
+---
+title: FAQ
+description: Answers to the most common questions about Split Tester.
+---
+
+## General
+
+### Does Split Tester work with all Shopify themes?
+
+The tracking script and most experiment types (Theme, URL Redirect, Template, Section content) work with all Shopify themes. Price experiments require adding two data attributes to your theme's Liquid files — a one-time setup that takes about 10 minutes. See [Theme compatibility](/setup/theme-compatibility) for supported themes and setup instructions.
+
+### Can I run Split Tester on a Shopify store that is not on Shopify Plus?
+
+Yes. All experiment types except **Price test (Plus)** work on any Shopify plan. The **Price test (auto-setup)** option is specifically designed for non-Plus stores and is available on all plans.
+
+### How many experiments can I run at the same time?
+
+There is no hard limit. Practically, keep in mind:
+- Only one **Theme test** can run at a time (multiple theme tests conflict)
+- Running many experiments on the same page can produce interaction effects that make results harder to interpret
+- Each experiment needs sufficient traffic to reach significance — spreading traffic across many experiments slows all of them
+
+### Will experiments affect my Shopify Analytics or Google Analytics data?
+
+Split Tester does not modify Shopify Analytics or GA4 data. Shopify Analytics and GA4 see all sessions normally — they do not know a visitor is in a specific experiment variant unless you explicitly pass that data.
+
+If you have Google Tag Manager or gtag on your store, Split Tester integrates with GA4 via `gtag('event', 'experiment_impression', {...})` for each new assignment. This is opt-in and only fires when gtag is available on the page.
+
+### Does Split Tester work with Shopify Markets?
+
+For most experiment types, yes. For **Plus price tests**, multi-currency stores using Shopify Markets are not supported. See [Price testing limitations](/price-testing/limitations) for details.
+
+---
+
+## Visitor assignment
+
+### Can the same visitor be assigned to multiple experiments at the same time?
+
+Yes. Each experiment uses an independent hash function, so assignment to one experiment has no effect on assignment to another. A visitor can be in Experiment A (Control) and Experiment B (Variant) simultaneously.
+
+The only exception is Theme tests — two simultaneous theme tests conflict because Shopify only supports one `?preview_theme_id` at a time.
+
+### What happens if a visitor clears their cookies?
+
+They are assigned fresh. Their old assignment is gone, and they may end up in a different variant. This is expected — it is why sample sizes matter. Cookie churn is typically very low (less than 1% of visitors per week) and does not meaningfully affect results.
+
+### Can I test my own store as a visitor without affecting results?
+
+Yes. Clear the `spt_asgn` cookie and visit your store. You will be re-assigned and your visit will be counted in results. If you want to test a specific variant, you can manipulate the cookie directly:
+
+```js
+document.cookie = 'spt_asgn=' + encodeURIComponent(JSON.stringify({
+  '<experiment-id>': '<variant-id>'
+})) + '; Path=/; Max-Age=31536000';
+```
+
+Replace `<experiment-id>` and `<variant-id>` with the real IDs from the experiment's Overview tab.
+
+### Why does a visitor sometimes see the wrong variant after navigating between pages?
+
+If a visitor lands on a page before the app embed has loaded (e.g. a cached page), they may briefly see the default experience. The embed applies the variant on the next page load. This is rare and can usually be addressed by adjusting your CDN caching rules to not cache pages for logged-out visitors, or by ensuring the embed is not blocked.
+
+---
+
+## Results
+
+### Why do my results not match Shopify Analytics?
+
+Split Tester and Shopify Analytics count sessions and conversions differently:
+
+- **Shopify Analytics sessions** are based on Shopify's own visit definition (30-minute inactivity timeout, referrer-based session splitting)
+- **Split Tester sessions** are per page view events, filtered to relevant pages per experiment type
+
+The numbers will not match exactly, and that is fine. What matters for your A/B test is that the counting is consistent across variants — the comparison is valid even if the absolute numbers differ from Shopify's.
+
+### How quickly do results update?
+
+Results are updated hourly by a background rollup job. You can also click **Refresh results** on the Results tab for an immediate update. The refresh button recalculates all stats from raw event data and typically completes in a few seconds.
+
+### My experiment shows high lift but low significance. What do I do?
+
+Keep running. High lift with low significance means you have promising signal but not enough data to be confident it is real. Stopping now would mean acting on what could be random noise. Let the experiment accumulate more sessions.
+
+### My experiment shows high significance but near-zero lift. Should I ship the variant?
+
+Probably not. A statistically significant result with a 0.1% CVR lift is technically real, but the business impact is negligible. Consider the cost of shipping the change (engineering time, design debt) vs the reward (0.1% CVR improvement). Usually it is not worth it.
+
+### What does a p-value of 1.00 mean?
+
+P = 1.00 means the two variants have nearly identical conversion rates and there is no signal at all. This is expected early in an experiment or when the change has truly no effect.
+
+---
+
+## Price testing
+
+### Does the price test affect all visitors or just the ones in the experiment?
+
+Only visitors assigned to the experiment variants are affected. Visitors excluded from the experiment (via traffic allocation) or not yet assigned see the original price.
+
+### Can I test a price increase instead of a decrease?
+
+Yes. Set a positive percentage or fixed adjustment in the variant configuration. A +10% adjustment will show and charge 10% more than the original price for assigned visitors.
+
+### What happens if a visitor adds to cart and then the experiment ends?
+
+For Plus price tests, if the experiment ends while a visitor has items in their cart with the test price, they will be charged the original price at checkout (Cart Transform no longer applies). For non-Plus auto-setup tests, the duplicate product is deleted when the experiment ends, so the redirect no longer fires. Visitors with the old URL in their history may land on a 404.
+
+### Can I run a price test on a product that has multiple variants (sizes, colors)?
+
+Yes. The price adjustment applies to every variant. For Plus price tests, Cart Transform identifies which line item has the `spt_asgn` attribute and applies the adjustment only to that line item. For auto-setup tests, the duplicate product has the adjusted price on every variant.
+
+---
+
+## Technical
+
+### Does Split Tester work with cookie consent banners / GDPR?
+
+Yes. Split Tester checks `Shopify.customerPrivacy.analyticsProcessingAllowed()` before sending any analytics events. If the visitor has not given consent, events are not sent. Visitor ID generation and variant bucketing still happen (so the visitor sees a consistent experience), but no data is recorded.
+
+If you use a third-party consent management platform (OneTrust, Cookiebot, etc.), ensure that analytics consent is correctly communicated to Shopify's Customer Privacy API, which is what Split Tester reads.
+
+### Does Split Tester slow down my store?
+
+The performance impact is minimal by design. The script is served from Shopify's CDN, config is inlined in the page (no API call), and all tracking uses `navigator.sendBeacon` (non-blocking). In Lighthouse tests, Split Tester typically adds less than 50ms to Time to First Byte and does not affect Largest Contentful Paint or Cumulative Layout Shift.
+
+### What happens if the Split Tester script errors?
+
+The embed includes a safety timeout. If something goes wrong during variant assignment (a JavaScript error, a network issue, an unexpected state), the page is revealed after 2 seconds regardless. Visitors will see the default experience. An error is logged to the console.
+
+### Does Split Tester work with Shopify's new checkout (one-page checkout)?
+
+Yes. Order attribution uses the `orders/paid` webhook and cart attributes, which work regardless of which checkout version you use.
+
+### Can I export raw event data?
+
+Not currently. The dashboard shows rollup-level data. Raw event export is on the roadmap. Contact us at **support@splittester.com** if this is blocking for you.
+
+---
+
+## Account and billing
+
+### What happens to my experiments if I downgrade my plan?
+
+Running experiments continue to run, but you may lose access to experiment types that require a higher plan tier. All historical data is preserved.
+
+### Can I install Split Tester on multiple stores?
+
+Yes. Each store requires a separate installation. Data is completely isolated between stores.
+
+### How do I contact support?
+
+Email us at **support@splittester.com**. We typically respond within one business day. For urgent issues (a broken price test, a guardrail that paused an experiment unexpectedly), include your store URL and the experiment ID.

@@ -1,41 +1,141 @@
 ---
 title: Creating an experiment
-description: Step-by-step guide to setting up a new A/B experiment.
+description: A detailed walkthrough of the new experiment form, variant configuration, and everything that happens after you click Create.
+---
+
+## Before you start
+
+Before creating an experiment, make sure:
+
+1. The **app embed is enabled** on your live theme (see [Enable the app embed](/setup/app-embed))
+2. You know **what you want to test** — have a clear hypothesis before you start
+3. For Theme tests: your **duplicate theme is ready** with the changes applied
+4. For Template tests: your **alternate template file exists** in the theme code
+5. For Price tests (Plus): your theme has the **price data attributes** added (see [Theme compatibility](/setup/theme-compatibility))
+
 ---
 
 ## New experiment form
 
-Go to **Experiments → New experiment** and fill in:
+Go to **Experiments → New experiment**.
 
-| Field | Description |
-|---|---|
-| **Name** | Internal label — merchants see this, visitors don't |
-| **Hypothesis** | What you expect to happen and why. e.g. "Showing a urgency badge will increase ATC rate" |
-| **Type** | What you're testing. See [Experiment types](/experiments/types) |
-| **Traffic allocation** | Percentage of visitors included in the experiment (the rest see the default) |
-| **Segment** | Optional — restrict the experiment to a specific audience |
+### Name
 
-## Variants
+Your experiment name is an internal label for the dashboard. Visitors never see it. Be specific enough that you will remember what it was testing in six months. Good examples:
 
-Every experiment has at least two variants:
+- `PDP hero image — lifestyle vs product`
+- `Collection page — sidebar vs top filters`
+- `Homepage CTA — "Shop now" vs "Browse collection"`
 
-- **Control** — the current experience, unchanged
-- **Variant B** — the treatment you're testing
+### Hypothesis
 
-You can rename these anything. Traffic is split 50/50 by default. After creating the experiment, you can adjust weights per variant from the Variants tab.
+Write your hypothesis before you look at any data. A good hypothesis explains both what you expect to happen and why:
 
-<Note>
-  Variant weights must sum to exactly 100. If they don't, visitors in the gap won't be assigned to any variant and won't be tracked.
-</Note>
+> "Replacing the generic product photo with a lifestyle image will increase add-to-cart rate because it helps visitors picture themselves using the product."
+
+This forces you to think about the mechanism before the test, which makes results easier to interpret and harder to rationalise post-hoc.
+
+### Type
+
+Choose the experiment type that matches what you are testing. See [Experiment types](/experiments/types) for a full comparison.
+
+If you are not sure, the most common choices are:
+- **Section content** for copy or CTA changes
+- **Theme** for design or layout changes across the whole site
+- **URL Redirect** for landing page comparisons
+- **Template** for product or collection page layout changes
+
+### Traffic allocation
+
+The traffic allocation slider controls what percentage of all visitors enter the experiment. The remaining visitors see the default experience and are not tracked.
+
+**Set it to 100% by default.** This gives you the fastest results. Lower it only if:
+
+- You are testing a risky change and want to limit exposure
+- You are running multiple experiments and want to reduce overlap
+- Your store has very high traffic and you only need a fraction to reach significance quickly
+
+See [Traffic allocation](/experiments/traffic-allocation) for a deeper explanation.
+
+### Segment
+
+Leave blank to target all visitors. Select a saved segment to restrict the experiment to a specific audience — mobile visitors, paid traffic, a particular referrer, etc.
+
+See [Segments](/experiments/segments) for details on creating and using segments.
+
+---
 
 ## After creating
 
-You'll be taken to the experiment detail page. From here:
+Once you click **Create experiment**, you land on the experiment detail page with status **Draft**.
 
-1. Go to the **Variants** tab and click **Configure** on each variant to set up the specific changes
-2. Check the **Overview** tab to verify settings
-3. Click **Start experiment** when ready
+### Variants tab
 
-## Editing a running experiment
+Go to the **Variants** tab. You will see at least two variants:
 
-You can change the experiment's segment at any time from the Overview tab without restarting. Changing variant weights or content on a running experiment is not recommended — it can introduce bias into results collected before the change.
+- **Control** — always listed first. Status: "No configuration needed" for most experiment types. The control shows the default experience.
+- **Variant B** — click **Configure** to set it up.
+
+### Configuring Variant B
+
+What you set on Variant B depends on the experiment type:
+
+**Theme test**
+Select the unpublished duplicate theme from the dropdown. The dropdown only shows themes that are not currently live.
+
+**URL Redirect**
+Enter the destination URL — the page variant visitors will be sent to. This must be a relative path starting with `/` (e.g. `/pages/new-landing-page`) or a full URL on the same domain.
+
+**Price test (auto-setup)**
+Select the product from a searchable dropdown. Set the price adjustment type:
+- **Percentage** — e.g. `-10` for 10% off, `+15` for 15% more
+- **Fixed amount** — e.g. `-5` to subtract 5.00 from every variant's price
+
+The adjustment applies to every variant (size, color, etc.) on the product.
+
+**Price test (Plus)**
+Select the product and set the price adjustment. The Cart Transform function handles the rest.
+
+**Section content**
+Paste or type the HTML you want to inject into the Variant Content block. Preview it by switching between variants in the editor.
+
+**Template**
+Select the template type (Product, Collection, Page, etc.) and then select the alternate template from the dropdown. The dropdown shows all alternate templates found in your live theme — e.g. `product.my-test.json` appears as `my-test` under the Product type.
+
+### Variant weights
+
+By default, traffic is split 50/50 between Control and Variant B. To change this, click **Edit weights** on the Variants tab and enter new percentages. They must sum to exactly 100.
+
+**Adding a third variant (A/B/C test)**
+
+Click **Add variant** on the Variants tab and configure it the same way as Variant B. Redistribute weights to add up to 100 (e.g. 34/33/33).
+
+---
+
+## Starting the experiment
+
+Once all variants are configured, go to the **Overview** tab and click **Start experiment**.
+
+The status changes from **Draft** to **Running**. Visitor assignment begins immediately.
+
+<Warning>
+  Once an experiment is running, avoid changing variant weights or content. Changes introduce a confound — results collected before and after the change are measuring different things. If you need to make a significant change, it is usually better to archive the experiment and start fresh.
+</Warning>
+
+---
+
+## Pausing an experiment
+
+You can pause a running experiment from the Overview tab. Paused experiments stop assigning new visitors. Existing visitors retain their assignments and will be re-assigned if the experiment resumes (or re-enter the default experience during the pause).
+
+Use pause for short interruptions — major site events, promotions, or technical issues. Do not pause routinely, as it skews day-of-week balance.
+
+---
+
+## Completing or archiving
+
+**Complete** an experiment when you have a clear winner and want to record that the winning variant was applied.
+
+**Archive** an experiment when you want to end it without declaring a winner (the change was not applied, or results were inconclusive).
+
+Both actions set the experiment status to non-running. For Price (auto-setup) experiments, the duplicate product is deleted automatically.

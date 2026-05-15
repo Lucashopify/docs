@@ -56,13 +56,24 @@
         ]
       },
       {
-        "group": "Results",
+        "group": "Price Testing",
+        "icon": "tag",
+        "expanded": true,
+        "pages": [
+          "price-testing/plus",
+          "price-testing/non-plus",
+          "price-testing/limitations"
+        ]
+      },
+      {
+        "group": "Results & Analysis",
         "icon": "chart-bar",
         "expanded": true,
         "pages": [
           "results/overview",
           "results/metrics",
-          "results/significance"
+          "results/significance",
+          "results/guardrails"
         ]
       },
       {
@@ -71,8 +82,17 @@
         "expanded": true,
         "pages": [
           "setup/app-embed",
+          "setup/theme-compatibility",
           "setup/variant-content",
           "setup/template-tests"
+        ]
+      },
+      {
+        "group": "Reference",
+        "icon": "book-open",
+        "expanded": true,
+        "pages": [
+          "faq"
         ]
       }
     ]

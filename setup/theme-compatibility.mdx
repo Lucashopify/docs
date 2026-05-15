@@ -1,0 +1,154 @@
+---
+title: Theme compatibility
+description: Which Shopify themes work with price experiments out of the box, and how to add support for custom themes.
+---
+
+## Why theme setup is needed for price tests
+
+For price experiments to work correctly, Split Tester's script needs to know which HTML elements on your page display the product price and which elements display the cart line item price. The script updates these elements to show the test price for visitors assigned to the variant.
+
+This is done by looking for specific **data attributes** on the relevant elements:
+
+- `data-spt-price` — the element showing the product price on the PDP
+- `data-spt-cart-price` — the element showing the line item price in the cart (drawer or page)
+
+For **supported themes**, these attributes are automatically added by Split Tester's theme app extension — no manual setup required.
+
+For **other themes**, you or a developer needs to add the attributes once. It takes 5-10 minutes and only needs to be done once.
+
+<Note>
+  These attributes are only used by Split Tester's script and have no effect on your theme's appearance or behaviour. They are safe to add to any theme.
+</Note>
+
+---
+
+## Supported themes (automatic setup)
+
+The following Shopify-owned themes are fully supported out of the box. If you are using one of these, no manual setup is required:
+
+<CardGroup cols={4}>
+  <Card title="Dawn" />
+  <Card title="Sense" />
+  <Card title="Craft" />
+  <Card title="Crave" />
+  <Card title="Colorblock" />
+  <Card title="Refresh" />
+  <Card title="Studio" />
+  <Card title="Origin" />
+  <Card title="Spotlight" />
+  <Card title="Ride" />
+  <Card title="Expression" />
+  <Card title="Habitat" />
+  <Card title="Presence" />
+  <Card title="Publisher" />
+</CardGroup>
+
+Support for additional themes is added regularly. If your theme is not in the list, follow the manual setup instructions below.
+
+---
+
+## Manual setup for custom and third-party themes
+
+You need to add two data attributes to your theme's Liquid files. This is a one-time change.
+
+### What you need
+
+A developer (or you, if you are comfortable editing Liquid). The changes are small and non-breaking — they only add an attribute to an existing element.
+
+### Step 1: Add `data-spt-price` to the product page price element
+
+Find the element in your theme that displays the product's price on the product detail page (PDP). This is usually in a file like `sections/main-product.liquid` or `snippets/price.liquid`.
+
+The element typically looks like this (or similar):
+
+```liquid
+<span class="price__current">{{ product.selected_or_first_available_variant.price | money }}</span>
+```
+
+Add the `data-spt-price` attribute:
+
+```liquid
+<span class="price__current" data-spt-price>{{ product.selected_or_first_available_variant.price | money }}</span>
+```
+
+**Tips for finding the right element:**
+
+1. On a product page, right-click the price and select **Inspect** in your browser
+2. Look for the element that contains just the price number (not a wrapper `div`)
+3. Find that element's class name in your theme code using the Theme Editor's **Edit code** view
+
+### Step 2: Add `data-spt-cart-price` to the cart line item price element
+
+Find the element in your theme that displays the price for each item in the cart. This may be in your cart drawer (`sections/cart-drawer.liquid`) and/or your cart page (`sections/main-cart-items.liquid` or similar).
+
+The element typically looks like:
+
+```liquid
+<span class="cart-item__price">{{ item.final_price | money }}</span>
+```
+
+Add the `data-spt-cart-price` attribute:
+
+```liquid
+<span class="cart-item__price" data-spt-cart-price>{{ item.final_price | money }}</span>
+```
+
+**If your theme has both a cart drawer and a cart page**, add the attribute to the price element in both locations.
+
+### Step 3: Save and verify
+
+1. Save your changes in the Theme Editor
+2. On a product page, open the browser console and run:
+   ```js
+   document.querySelectorAll('[data-spt-price]')
+   ```
+   This should return your price element. If it returns an empty NodeList, the attribute is not on the right element.
+3. Add a product to cart and open the cart drawer or cart page. Run:
+   ```js
+   document.querySelectorAll('[data-spt-cart-price]')
+   ```
+   This should return one element per cart line item.
+
+---
+
+## Page builders
+
+If your product page is built with a page builder app (Replo, PageFly, Funnelish, GemPages, Shogun, or similar), the price element is rendered by the page builder with its own markup. You will need to add `data-spt-price` through the page builder's interface.
+
+| Page builder | How to add custom attributes |
+|---|---|
+| Replo | Select the price text element → Settings panel → Custom attributes → add `data-spt-price` |
+| PageFly | Select the price element → Advanced tab → Custom attributes → add `data-spt-price` |
+| GemPages | Select the element → Settings → Custom class/attributes section |
+| Shogun | Use the Custom HTML element to wrap the price and add the attribute |
+| Funnelish | Custom HTML widget |
+
+If your page builder is not listed or you are unsure, contact us and we will help.
+
+---
+
+## Cart drawer vs cart page
+
+Many themes have both a cart drawer (slides out from the side) and a cart page (`/cart`). Both may display line item prices. To ensure prices update correctly in both places, add `data-spt-cart-price` to the price element in both.
+
+If your theme only uses a cart drawer, only that file needs the attribute. If it only uses the cart page, same applies.
+
+---
+
+## Verifying a price test is applying correctly
+
+To check whether the price update is working for a specific experiment:
+
+1. Clear your `spt_asgn` cookie (or open an incognito window)
+2. Navigate to the tested product page
+3. Open the browser console and run `window.__SPT_ASGN__`
+4. If you are assigned to the test variant, the object will include your experiment ID mapped to the variant ID
+5. The price shown on the page should match the test price configured in the experiment
+
+If the assignment is correct but the price has not changed, the `data-spt-price` attribute is either missing or on the wrong element.
+
+---
+
+## Getting help
+
+Not comfortable editing Liquid? Contact us at **support@splittester.com** with your store URL and we will add the data attributes for you at no charge.

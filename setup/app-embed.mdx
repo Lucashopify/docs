@@ -1,37 +1,119 @@
 ---
 title: Enable the app embed
-description: Turn on the Split Tester tracking script in your Shopify theme.
+description: How to turn on the Split Tester script in your Shopify theme — and how to verify it is working.
 ---
 
-The app embed loads the Split Tester JavaScript on every storefront page. This script handles visitor identification, variant assignment, event tracking, and applying test changes (redirects, theme swaps, content injection).
+## What the app embed does
 
-**Without it, no experiments will run.**
+The app embed is a JavaScript file that Split Tester adds to every page of your storefront through Shopify's Theme App Extension system. It is responsible for:
 
-## Steps
+- Generating and persisting visitor IDs (`spt_vid` cookie)
+- Reading experiment config and bucketing visitors into variants
+- Applying variant experiences (redirects, theme previews, content injection, price updates)
+- Tracking events: PAGE_VIEW, ADD_TO_CART, INITIATE_CHECKOUT
+- Writing cart attributes for order attribution
+
+**Without the app embed enabled, no experiments will run and no data will be collected.**
+
+---
+
+## Enabling the embed
 
 1. In your Shopify Admin, go to **Online Store → Themes**
 2. On your live theme, click **Customize**
-3. In the Theme Editor, click the **App embeds** icon in the left sidebar (puzzle piece)
-4. Find **Split Tester** and toggle it **on**
-5. Click **Save**
+3. In the Theme Editor, click the **App embeds** icon in the left sidebar (the puzzle piece icon)
+4. Find **Split Tester** in the list
+5. Toggle it **on**
+6. Click **Save** in the top-right corner
 
+The embed is now active on all pages of your live theme.
 
-## Verify it's working
+<Info>
+  App embeds are a native Shopify feature and do not require editing any theme code. The embed is added to your theme's `<head>` automatically by Shopify when you toggle it on.
+</Info>
 
-After enabling, visit any page on your store. Then go to **Get started** in the Split Tester dashboard — Step 1 will show as complete once the first storefront event is received.
+---
 
-You can also open your browser console and check for `window.__SPT_VID__` — if it's set, the embed is active.
+## Verifying it is working
 
-## Performance
+### Method 1: Check the Get Started page
 
-The embed script is served from Shopify's CDN via the theme app extension. It:
-- Runs before page render to prevent content flash
-- Has a 2-second safety timer to always reveal the page even if something goes wrong
-- Uses `navigator.sendBeacon` for event tracking (non-blocking)
-- Reads experiment config from a metafield (zero API calls on the critical path)
+After enabling the embed, visit any page on your storefront. Then return to the Split Tester dashboard and open **Get Started**. Step 1 shows a green checkmark once the dashboard receives its first event from your store — this usually takes less than 30 seconds after your first page visit.
+
+### Method 2: Check the browser console
+
+Open your storefront in a browser, then open the browser's developer tools (F12 or Cmd+Opt+I on Mac) and go to the **Console** tab.
+
+Type:
+```js
+window.__SPT_VID__
+```
+
+If the embed is active, this returns a 32-character hex string (your visitor ID). If it returns `undefined`, the embed is not loading.
+
+Also check:
+```js
+window.__SPT_CFG__
+```
+
+This returns the current experiment config. If it is an empty object with no experiments, the embed is loading but no experiments are running.
+
+### Method 3: Check the Network tab
+
+In your browser developer tools, go to **Network** and filter by `events`. After loading a page on your store, you should see a POST request to `/api/events`. If you see it, events are firing correctly.
+
+---
+
+## Performance impact
+
+The embed script is designed to be as non-blocking as possible:
+
+- **Served from Shopify's CDN** — the script is part of a Shopify Theme App Extension, so it is hosted and delivered by Shopify's own infrastructure, not Split Tester's servers
+- **Inline config** — experiment configuration is injected as a JavaScript variable during Liquid rendering, so no API call is needed to fetch config on the client
+- **Synchronous bucketing** — variant assignment happens synchronously before `DOMContentLoaded`, preventing any flash of the wrong variant
+- **Async event sending** — all analytics events are sent via `navigator.sendBeacon`, which is non-blocking and does not delay page interactions
+- **Safety timeout** — if the script takes longer than 2 seconds to complete (e.g. due to a network issue), the page is automatically revealed to the visitor regardless
+
+The embed adds no perceptible latency to your storefront for most visitors.
+
+---
 
 ## Multiple themes
 
-The embed only needs to be enabled on your **live theme**. If you use a development theme for testing, you'll need to enable it there separately.
+The app embed must be enabled separately on each theme you use. If you have:
 
-If you switch your live theme, re-enable the embed on the new theme.
+- A live theme with the embed enabled
+- A development or duplicate theme for testing
+
+The embed will only run on the theme where it is enabled. Make sure to enable it on your live theme.
+
+**If you switch your live theme** (e.g. you publish a new theme), you need to re-enable the embed on the new live theme. Go through the same steps — the embed does not carry over automatically between themes.
+
+---
+
+## The embed and theme previewing
+
+When you use Shopify's theme preview feature (`?preview_theme_id=...`), the theme app extension from the embed will not run unless the embed is also enabled on the preview theme. This is expected behaviour — Shopify's theme preview loads the target theme's own app embeds, not the live theme's.
+
+For Split Tester's own theme tests, the embed handles this internally by running the variant assignment before the theme preview redirect fires, then preserving the assignment in the `spt_asgn` cookie.
+
+---
+
+## Troubleshooting
+
+**The embed is toggled on but `window.__SPT_VID__` is undefined**
+
+- Make sure you saved in the Theme Editor after toggling on
+- Try a hard refresh (Cmd+Shift+R / Ctrl+Shift+R) on the storefront
+- Check whether a browser extension (ad blocker, privacy blocker) is blocking the script. Test in an incognito window with all extensions disabled.
+- Check the Network tab for any failed requests to Shopify's CDN
+
+**The embed loads but no events appear in the Get Started page**
+
+- Check the Network tab for a POST to `/api/events`. If it is failing with a 4xx or 5xx error, contact support.
+- Check the browser console for JavaScript errors from Split Tester scripts
+
+**The embed was working but stopped**
+
+- Check whether you recently switched or published a new theme. The embed needs to be re-enabled on the new theme.
+- Check whether a theme update removed the app embed setting. Go through the Enable steps again.

@@ -1,0 +1,128 @@
+---
+title: Price testing on Shopify Plus
+description: How to run a real server-side price A/B test using Shopify's Cart Transform API.
+---
+
+<Note>
+  Cart Transform is a Shopify Plus exclusive feature. If your store is not on Shopify Plus, see [Price testing on non-Plus stores](/price-testing/non-plus) for an alternative approach.
+</Note>
+
+## How it works
+
+Shopify Plus price testing uses the **Cart Transform API** to modify the actual checkout price server-side. When a visitor assigned to the test variant adds a product to their cart, Split Tester's Cart Transform function intercepts the cart before checkout and adjusts the price. The customer sees the test price in their cart and pays it at checkout — no discount codes, no workarounds.
+
+The full flow:
+
+1. Visitor arrives on the product page
+2. Split Tester JS detects they are assigned to the test variant
+3. Price elements in the DOM are updated to show the test price
+4. Visitor adds to cart — a hidden cart attribute `spt_asgn` is written to the cart recording their assignment
+5. Visitor proceeds to checkout
+6. Shopify calls Split Tester's Cart Transform function
+7. Cart Transform reads the `spt_asgn` attribute and applies a fixed price override to the correct line items
+8. Checkout completes at the test price
+
+---
+
+## Setup
+
+### Step 1: Verify your plan
+
+Confirm your store is on Shopify Plus. Cart Transform functions are not available on lower plans. You can check your plan in **Shopify Admin → Settings → Plan**.
+
+### Step 2: Check theme compatibility
+
+Your theme needs two data attributes for the price script to know which elements to update. See [Theme compatibility](/setup/theme-compatibility) to check if your theme is supported out of the box.
+
+If you are using a custom or third-party theme, you may need to add two data attributes before price tests will work correctly. This is a one-time setup.
+
+### Step 3: Create the experiment
+
+1. Go to **Experiments → New experiment**
+2. Select **Price test** (marked Shopify Plus)
+3. Search for and select the product you want to test
+4. Set your traffic split
+5. Click **Create experiment**
+
+### Step 4: Configure Variant B
+
+Click **Configure** on Variant B. Set the price adjustment:
+
+**Percentage adjustment**
+A percentage is applied to every variant's current price. Negative values reduce the price; positive values increase it.
+- `-10` means show and charge 10% less
+- `+15` means show and charge 15% more
+
+**Fixed amount adjustment**
+A fixed currency amount is added to or subtracted from every variant's price.
+- `-5` means subtract 5.00 from every variant
+- `+10` means add 10.00 to every variant
+
+The adjustment applies to every product variant (size, color, etc.) proportionally.
+
+### Step 5: Start the experiment
+
+Click **Start experiment** on the Overview tab. Price changes go live immediately for newly assigned visitors.
+
+---
+
+## What the customer sees
+
+| Stage | Control | Variant B |
+|---|---|---|
+| Product page | Original price | Test price (DOM updated by JS) |
+| Cart | Original price | Test price (DOM updated by JS) |
+| Checkout | Original price | Test price (applied by Cart Transform) |
+| Order confirmation | Original price | Test price |
+
+The test price at checkout is applied by Cart Transform, which runs server-side. Even if the visitor has JavaScript disabled or the price element script fails, the Cart Transform function will still apply the correct price because it reads the cart attribute written when the visitor added to cart.
+
+<Warning>
+  The price shown on the product page is updated by JavaScript after the page loads. If a visitor lands with JavaScript disabled, they will see the original price but be charged the test price if the cart attribute is set. This is an edge case affecting a very small fraction of users.
+</Warning>
+
+---
+
+## How the displayed price is updated
+
+The Split Tester script looks for elements with the `data-spt-price` attribute on the product page and `data-spt-cart-price` in the cart. When a visitor is assigned to a price test variant, the script updates the text content of these elements to show the test price.
+
+For supported themes (Dawn, Sense, Craft, and others), these attributes are added automatically by the theme app extension. For other themes, you or a developer needs to add them. See [Theme compatibility](/setup/theme-compatibility).
+
+---
+
+## Cart attribute and Buy It Now
+
+For standard add-to-cart forms, the cart attribute `spt_asgn` is written to the cart via `/cart/update.js` on every page load. This ensures Cart Transform always has the assignment data it needs.
+
+For **Buy It Now** buttons, which bypass the cart entirely, the JS injects a hidden `<input name="properties[spt_asgn]" value="...">` field into the product form. This becomes a line item property on the order and is also read by Cart Transform.
+
+---
+
+## Ending a price test
+
+When you **Complete** or **Archive** the experiment:
+
+- All visitors revert to the original price immediately
+- The Cart Transform function stops applying adjustments
+- If visitors have items in their cart with the test price already applied, they may see a price change on next cart load (Shopify refreshes cart prices)
+
+If the test price won and you want to keep it, manually update the product price in Shopify Admin and then archive the experiment.
+
+---
+
+## Troubleshooting
+
+**The price is not updating on the product page**
+
+Your theme may not have the `data-spt-price` attribute. See [Theme compatibility](/setup/theme-compatibility) to check and add it.
+
+**The test price is not applied at checkout**
+
+- Confirm the Cart Transform extension is deployed. Run `npx shopify app deploy --allow-updates` from the app directory.
+- Check that the `spt_asgn` cart attribute is being set. Open your cart at `/cart.json` in the browser and look for `attributes.spt_asgn`.
+- Make sure the visitor is assigned to a non-control variant. Check `window.__SPT_ASGN__` in the browser console.
+
+**Prices are wrong for subscription variants**
+
+Shopify does not allow Cart Transform to modify prices on line items with selling plans attached. Subscription variants will be charged the original price. See [Price testing limitations](/price-testing/limitations).

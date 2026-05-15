@@ -1,48 +1,156 @@
 ---
 title: Variant Content block
-description: Place this app block in Theme Editor to run Section and Page tests.
+description: How to place and configure the Variant Content app block for Section and Page content experiments.
 ---
 
-The **Variant Content** block is a theme app extension block that acts as a placeholder container. When the page loads, Split Tester injects the assigned variant's HTML into it before revealing the page.
+## What is the Variant Content block?
 
-This is required for **Section** and **Page** experiment types.
+The Variant Content block is a **Shopify Theme App Extension block** that you place in your Theme Editor. It acts as a placeholder container that Split Tester injects HTML into on page load.
 
-## Add the block
+This block is required for **Section content** and **Page content** experiment types. It is not needed for Theme, URL Redirect, Price, or Template experiments.
 
-1. In Shopify Admin, go to **Online Store → Themes → Customize**
-2. Navigate to the section or page where you want the test content to appear
-3. Click **Add block** (or **Add section** depending on your theme)
-4. Find **Split Tester — Variant Content** under Apps
-5. In the block settings, paste your **Experiment ID** (found in the experiment's Overview tab)
-6. Save
+---
 
-## In design mode
+## How it works
 
-In the Theme Editor, the block shows a labeled placeholder so you can see where it is:
+When a visitor loads a page:
 
-```
-Split Test — Variant Content
-Experiment ID: cm3xyz...
-```
+1. The page renders with the Variant Content block as a hidden `div`
+2. The Split Tester script reads the visitor's variant assignment for the configured experiment ID
+3. For control visitors — the block stays hidden (the section's default content shows)
+4. For variant visitors — the script injects the configured HTML into the block container and makes it visible
+5. This happens before the page is revealed to the visitor — no flash of wrong content
 
-## In production
-
-On the live storefront, the block renders as a hidden `div`:
+The block renders in the DOM as:
 
 ```html
-<div data-spt-section="cm3xyz..." style="visibility:hidden"></div>
+<div data-spt-section="your-experiment-id" style="visibility:hidden"></div>
 ```
 
-The Split Tester script injects the variant HTML into this container on `DOMContentLoaded` — before the page is revealed — so visitors never see a flash of wrong content.
+---
 
-## Multiple blocks
+## Adding the block to your theme
 
-You can place multiple Variant Content blocks on the same page, each with a different Experiment ID. This lets you run independent tests on different sections of the same page.
+### Step 1: Find your experiment ID
 
-## Control variant
+Go to your experiment in Split Tester and open the **Overview** tab. Copy the **Experiment ID** — it is a long alphanumeric string starting with `cl`.
 
-The control variant has no HTML configured — it uses whatever the theme renders by default in that section. The Variant Content block stays hidden for control visitors (unless the section has its own default content above/below the block).
+### Step 2: Open the Theme Editor
 
-<Tip>
-  If you want the control to show specific content too, add a second Variant Content block for the control, or use the standard Theme Editor content fields for that section.
-</Tip>
+In Shopify Admin, go to **Online Store → Themes → Customize** on your live theme.
+
+### Step 3: Navigate to the right location
+
+Go to the page or section where you want the test content to appear. For example:
+- If you are testing a homepage hero headline, navigate to the homepage
+- If you are testing a product page banner, navigate to a product page
+
+### Step 4: Add the block
+
+Click **Add block** or **Add section** (depending on where you are placing it):
+
+- If you are adding it within an existing section (e.g. below the hero heading), use **Add block** inside that section
+- If you are adding it as a standalone section, use **Add section** at the page level
+
+Search for **Variant Content** under Apps and select it.
+
+### Step 5: Configure the block
+
+With the block selected, the right panel shows its settings. Paste your **Experiment ID** into the Experiment ID field.
+
+### Step 6: Position the block
+
+Drag the block to the exact position where the variant content should appear. The block is invisible in both the editor and on the live site — its position determines where the injected HTML will appear on the page.
+
+### Step 7: Save
+
+Click **Save** in the Theme Editor.
+
+---
+
+## Configuring variant HTML
+
+After placing the block, go back to Split Tester and open your experiment's **Variants** tab. Click **Configure** on Variant B.
+
+Paste the HTML you want to show variant visitors. This can be:
+
+- Plain HTML: headings, paragraphs, images, buttons
+- Inline styles: `<div style="...">...</div>`
+- Script tags: `<script>...</script>` (runs after injection)
+- Shopify CDN URLs for images (recommended — they are fast and reliable)
+
+**Example: Testing a new hero headline**
+
+Control (no configuration — renders whatever the theme section shows by default):
+```
+[no HTML — control sees the existing theme content]
+```
+
+Variant B:
+```html
+<h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">
+  Free shipping on every order, always.
+</h1>
+<p style="font-size: 1.125rem; color: #555;">
+  No minimums. No codes. Just great products delivered fast.
+</p>
+<a href="/collections/all" style="display: inline-block; padding: 0.75rem 2rem; background: #111; color: #fff; border-radius: 4px; text-decoration: none;">
+  Shop now
+</a>
+```
+
+---
+
+## Control variant behaviour
+
+The **Control** variant has no HTML configured. For control visitors, the Variant Content block remains hidden — they see whatever the Theme Editor section renders by default.
+
+This means the control experience depends on your theme's section content. If the section above or below the block has content, control visitors see that. If the block is positioned where there is nothing else in the section, control visitors see an empty space.
+
+To avoid an empty gap in the control experience, make sure the block is positioned inside a section that already has content the control visitors should see.
+
+---
+
+## Multiple blocks on the same page
+
+You can place multiple Variant Content blocks on the same page, each linked to a different experiment. For example:
+
+- Block 1 (Experiment A): tests the hero headline
+- Block 2 (Experiment B): tests the CTA button below the fold
+
+Each block evaluates independently. A visitor could be in both experiments and see both variant injections simultaneously.
+
+Make sure each block has the correct Experiment ID — there is no visual indicator on the page of which block belongs to which experiment.
+
+---
+
+## Where to place the block
+
+### Inside an existing section
+
+If you want to replace the content of a specific part of a section (e.g. the heading inside a hero section), add the block inside that section. The injected HTML will appear in the position of the block within the section's layout.
+
+### As a standalone section
+
+If you want the test content to appear between two existing sections (e.g. a banner between the hero and the product grid), add the block as its own section and drag it to the right position between sections.
+
+---
+
+## Troubleshooting
+
+**Content is not showing for variant visitors**
+
+1. Check that the Experiment ID in the block settings matches the experiment's ID exactly (copy-paste, do not type manually)
+2. Check that the experiment status is **Running**
+3. Verify the visitor is in the variant: open the browser console and run `window.__SPT_ASGN__`
+4. Check that the Variant Content block is saved and the app embed is enabled
+
+**There is a visible flash of wrong content**
+
+The block is hidden (`visibility: hidden`) during script execution and revealed after injection. If you see a flash:
+- The script may be loading after the page is visible — check that the app embed is correctly enabled
+- A theme update may have changed the script loading order
+
+**The control experience has a gap / empty space**
+
+The Variant Content block is invisible. If the control experience shows an empty space where the block is, it means the block is in a position where there is no adjacent theme content for control visitors. Either move the block to a position inside an existing section, or configure the control variant with your current content as HTML.

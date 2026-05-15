@@ -1,0 +1,122 @@
+---
+title: Guardrails and auto-pause
+description: How Split Tester protects your store by detecting bad data and harmful experiments.
+---
+
+## What are guardrails?
+
+Guardrails are automated checks that run on your experiments to detect problems in the data pipeline or harm to your store's baseline performance. When a guardrail fires, the experiment is either flagged (warning displayed) or automatically paused.
+
+Split Tester runs three guardrails:
+
+1. **Sample Ratio Mismatch (SRM)** — detects when visitor allocation does not match configured weights
+2. **Control CVR drop** — detects when the experiment is harming your baseline conversion rate
+3. **Novelty effect** — flags early results that may be inflated by visitor curiosity
+
+---
+
+## Guardrail 1: Sample Ratio Mismatch
+
+### What it detects
+
+The actual split of visitors between variants is significantly different from what you configured.
+
+**Example:** You set a 50/50 split. After 500 sessions per variant, the actual split is 62% control / 38% variant. The difference is large enough to indicate a systematic problem.
+
+### Why it matters
+
+When one variant receives disproportionately more (or fewer) visitors than expected, the comparison groups are not equivalent. The difference in CVR between variants may be explained by who ended up in each group — not by the change itself. Results from an SRM experiment are unreliable.
+
+### How it works
+
+After each variant reaches 100 visitors, Split Tester runs a chi-squared test comparing observed visitor counts to expected counts based on configured weights. If the probability of the observed split is less than 1% (p < 0.01), SRM is declared.
+
+The experiment is flagged with a warning in the results table. If the **auto-pause on SRM** guardrail is enabled, the experiment is also paused.
+
+### Common causes
+
+**Bot traffic**
+Bots disproportionately hit the control because URL redirect and theme preview redirects often confuse bots or cause them to bail early. If bots are counted as sessions, the control ends up with more "visitors" than variant.
+
+**Caching**
+If pages are cached at the CDN or server level, the Split Tester script may not load for all visitors. Cached page visitors get the default (control) experience but are not tracked — reducing the apparent share of control sessions. Or they may be tracked incorrectly. Either way, distribution gets skewed.
+
+**Redirect-based tests conflicting**
+Running two redirect-based tests simultaneously (two theme tests, or a theme test and a template test) can cause conflicts where some visitors end up in an unexpected state.
+
+**A broken variant**
+If Variant B causes a JavaScript error that prevents the tracking script from completing, variant visitors may not fire page view events — making variant appear to have fewer sessions than it actually has.
+
+### How to fix SRM
+
+1. Identify the cause
+2. Fix it (adjust caching rules, remove conflicting experiments, fix the broken variant)
+3. Archive the current experiment — data collected during an SRM period cannot be cleaned up
+4. Start a new experiment
+
+---
+
+## Guardrail 2: Control CVR drop
+
+### What it detects
+
+The control variant's conversion rate drops more than 20% from its first-hour baseline.
+
+**Example:** In the first hour, control converts at 3.0%. Two days later, control is converting at 2.2% — a 27% drop. This guardrail fires.
+
+### Why it matters
+
+If the control's CVR drops significantly during the experiment, something is wrong. The experiment may be:
+
+- Causing a JavaScript error that affects the control experience
+- Interfering with checkout (e.g. a price manipulation that breaks for some users)
+- Interacting with another change on the site
+
+When this guardrail fires, it means your control baseline is unstable — and your results are comparing a healthy state (early) to an unhealthy state (later), which is not a valid A/B test.
+
+### How it works
+
+Split Tester records the control's CVR during the first hour of the experiment. This is the baseline. During subsequent hourly rollups, if control CVR falls more than 20% below the baseline and there are at least 200 control sessions, the experiment is automatically paused.
+
+The 20% threshold and 200 session minimum prevent false alarms from early noise. A 1-session baseline CVR of 100% dropping to 2% on session 2 should not trigger a pause.
+
+### What to do
+
+1. Check for JavaScript errors on the control experience in your browser console
+2. Check whether a recent site change coincides with the drop
+3. Review whether another experiment is interfering
+4. Fix the issue, then resume or restart the experiment
+
+---
+
+## Guardrail 3: Novelty effect detection
+
+### What it detects
+
+A treatment variant's early conversion rate (first 48 hours) is 40% or more higher than its conversion rate in the days that follow.
+
+**Example:** Variant B CVR is 5.0% in the first two days, then 2.8% in days 3-14. The drop is (5.0 - 2.8) / 5.0 = 44% — above the 40% threshold. A novelty warning is flagged.
+
+### Why it matters
+
+Returning visitors who notice a new variant often engage more — not because the change is better, but because it is different and draws their attention. This inflated early performance is known as the **novelty effect**. It typically fades after a week or two as the change becomes familiar.
+
+If you conclude during the novelty window, you may ship a change that looked like a 40% CVR lift but is actually a 5% lift (or zero) in steady state.
+
+### How it works
+
+After 3+ days of data, Split Tester computes the CVR for the first 48 hours and the CVR for all subsequent hours. If the drop exceeds 40% and there are at least 50 sessions in each window, a novelty warning is shown.
+
+Unlike SRM and Control CVR drop, the novelty guardrail does **not** auto-pause the experiment. It flags it for your attention.
+
+### What to do
+
+Do not conclude. Let the experiment run for another week or two and check whether significance holds after the early spike. If the variant's CVR stabilises at a still-positive lift (even smaller than the early spike), the result is credible.
+
+---
+
+## Enabling and disabling guardrails
+
+Auto-pause for SRM and Control CVR drop can be toggled on the experiment's **Overview** tab, under the **Guardrails** section. The novelty warning is always-on and only displayed, never auto-pauses.
+
+We recommend keeping auto-pause enabled for all experiments. An automatically paused experiment can be reviewed and resumed — it does not lose data. A running experiment with bad data produces results you cannot trust.

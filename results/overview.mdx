@@ -1,51 +1,133 @@
 ---
 title: Reading results
-description: How to interpret the Results tab and decide when to end an experiment.
+description: How to interpret the Results tab, when to draw conclusions, and what each status means.
 ---
 
-## Results tab
+## The Results tab
 
-The **Results** tab on each experiment shows a table with one row per variant. Results are computed by the hourly rollup job, or on demand when you click **↻ Refresh results**.
+The **Results** tab on each experiment page is where you go to interpret your test. Results are computed by an hourly rollup job that aggregates all events and orders attributed to the experiment. You can also trigger an immediate refresh by clicking **Refresh results** in the top-right corner of the tab.
+
+---
 
 ## Funnel overview
 
-At the top of every experiment page, the funnel shows aggregate stats across all variants:
+At the top of the Results tab, the funnel shows aggregate numbers across all variants combined. This gives you a quick read on the total volume of the test.
 
 | Metric | Source |
 |---|---|
-| Visitors | Unique visitor IDs allocated to the experiment |
-| Sessions | PAGE_VIEW events |
-| Add to Cart | ADD_TO_CART events |
-| Checkout | INITIATE_CHECKOUT events |
-| Orders | Orders attributed via cart attributes |
-| Revenue | Order revenue attributed to the experiment |
+| Visitors | Unique visitor IDs that have been assigned to a variant |
+| Sessions | Total PAGE_VIEW events recorded for the experiment |
+| Add to Cart | Total ADD_TO_CART events |
+| Checkout | Total INITIATE_CHECKOUT events |
+| Orders | Total orders attributed to the experiment via cart attributes |
+| Revenue | Total order revenue attributed to the experiment |
+
+The funnel is informational — use the per-variant table below it for actual analysis.
+
+---
+
+## Per-variant results table
+
+The table shows one row per variant. For each variant, you will see:
+
+| Column | What it means |
+|---|---|
+| Sessions | PAGE_VIEW events for this variant |
+| Orders | Orders attributed to this variant |
+| CVR | Orders / Sessions — the conversion rate |
+| ATC Rate | ADD_TO_CART events / Sessions |
+| Checkout Rate | INITIATE_CHECKOUT events / Sessions |
+| Revenue | Total revenue from orders in this variant |
+| Rev / Visitor | Revenue / Sessions — revenue per visitor |
+| AOV | Revenue / Orders — average order value |
+| Lift | % improvement in CVR vs control |
+| P-value | Statistical significance of the CVR difference |
+
+See [Metrics explained](/results/metrics) for a detailed breakdown of each metric.
+
+---
 
 ## Conclusion banner
 
-The banner above the results table tells you where the experiment stands:
+The banner above the results table summarises the experiment's status:
 
-| State | Meaning |
-|---|---|
-| **Collecting data** | Fewer than 100 sessions per variant — too early to draw conclusions |
-| **Not yet significant** | Enough data but `p ≥ 0.05` — keep running |
-| **Ready to conclude** | `p < 0.05` — results are statistically significant |
+### Collecting data
 
-## When to stop
+Fewer than 100 sessions per variant. Results at this stage are too noisy to be meaningful. Do not draw conclusions. Check back in a few days.
+
+### Not yet significant
+
+You have enough data (100+ sessions per variant) but the p-value is at or above 0.05. The observed difference could be due to random chance. Keep running.
+
+### Ready to conclude
+
+`p < 0.05`. The difference between variants is statistically significant. Combine this with the lift % and your minimum effect size to decide whether to ship the winning variant.
 
 <Warning>
-  Don't stop an experiment just because you see a positive trend early. Early results are volatile and will often revert. The minimum recommended runtime is 7 days.
+  Statistical significance is necessary but not sufficient for a good decision. A result can be statistically significant but practically meaningless (e.g. 0.2% CVR lift). Always consider whether the lift is large enough to be worth acting on.
 </Warning>
 
+---
+
+## Guardrails banners
+
+In addition to the conclusion banner, you may see one or more guardrail warnings:
+
+### Sample Ratio Mismatch (SRM)
+
+The actual visitor split between variants is significantly different from the configured weights. For example, you set 50/50 but the data shows 63/37. This indicates something is wrong with the assignment pipeline — results cannot be trusted.
+
+**Do not conclude from an SRM-flagged experiment.** Investigate and fix the root cause before drawing any conclusions. See [Guardrails](/results/guardrails) for common causes and fixes.
+
+### Control CVR drop
+
+The control variant's conversion rate has dropped more than 20% from its baseline (first-hour CVR). This usually means the experiment itself is breaking the control experience — a JavaScript error, a redirect conflict, or a content injection that is interfering with the page.
+
+When this guardrail fires, the experiment is automatically paused. Fix the issue before resuming.
+
+### Novelty effect warning
+
+The variant's CVR was significantly higher in the first 48 hours than in the days that followed. The early lift may be driven by returning customers who notice the change and convert out of curiosity — not by the change being genuinely better for new visitors. The experiment is flagged (not paused) but you should wait for the effect to stabilise before concluding.
+
+---
+
+## When to stop an experiment
+
+This is one of the most common mistakes in A/B testing: stopping too early because results look good. Early results are volatile and will often revert.
+
 Stop the experiment when **all three** conditions are met:
-1. At least 7 days have elapsed (one full day-of-week cycle)
-2. You have at least 100 sessions per variant
-3. `p < 0.05`
 
-If an experiment is running for 4+ weeks with no significance, the effect size is likely too small to be meaningful — consider ending it.
+1. **At least 7 days have elapsed** — to capture a full day-of-week cycle. Monday and Saturday traffic behave very differently on most stores.
+2. **At least 100 sessions per variant** — the minimum for any result to be meaningful.
+3. **p < 0.05** — results are statistically significant.
 
-## Guardrails
+### What if significance never arrives?
 
-The **Auto-stop guardrails** on the Overview tab can automatically pause your experiment if:
+If your experiment has been running for 4+ weeks and `p ≥ 0.05`, the true effect size is probably smaller than your minimum meaningful threshold. Options:
 
-- **Sample Ratio Mismatch** — visitor allocation drifts significantly from target weights (broken assignment pipeline)
-- **Control CVR drop** — your control variant's conversion rate drops >20% (broken variant hurting the store baseline)
+- **Archive the experiment** — the change did not produce a detectable lift. Move on.
+- **Check for SRM** — a sample ratio mismatch can suppress significance even when a real effect exists.
+- **Review your hypothesis** — was the expected lift realistic? A 50% CVR lift is rare. Most real effects are 5-15%.
+
+---
+
+## Acting on results
+
+### The variant won
+
+1. Note the lift %, CVR difference, and revenue per visitor improvement
+2. Ship the change permanently (publish the theme, update the price, deploy the new copy, etc.)
+3. Click **Complete experiment** to record the outcome
+
+### The control won (or no difference)
+
+1. The change did not help (or hurt). Do not ship it.
+2. Click **Archive experiment** to record the outcome
+3. Document what you learned in the hypothesis field for future reference
+
+### Results are inconclusive
+
+If you have strong significance but the lift is trivially small (e.g. 0.3% CVR), or if you have a large lift but not yet significant, use judgement:
+
+- **Small lift, high significance** — technically the variant works, but the business impact is minimal. Archive unless it also improves other metrics.
+- **Large lift, not yet significant** — keep running. Do not act on promising-looking but insignificant results.

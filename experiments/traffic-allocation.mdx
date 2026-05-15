@@ -1,53 +1,144 @@
 ---
 title: Traffic allocation
-description: Control how many visitors enter your experiment and how they're split between variants.
+description: How traffic allocation and variant weights work, and how to configure them correctly.
 ---
 
-## Experiment-level allocation
+## Two levels of traffic control
 
-The **traffic allocation** slider (5%–100%) controls what percentage of all visitors are included in the experiment. Visitors outside this allocation see the default experience and are not tracked.
+Split Tester has two separate traffic controls:
 
-**Example:** With 50% traffic allocation and two 50/50 variants:
-- 50% of visitors are excluded (default experience)
-- 25% of visitors see the control
-- 25% of visitors see the variant
+1. **Experiment-level traffic allocation** — what percentage of all visitors enter the experiment at all
+2. **Variant weights** — how traffic is split among the variants for visitors who do enter the experiment
 
-This is useful for limiting exposure when testing risky changes, or for running multiple experiments simultaneously without full overlap.
+Both are configured independently.
+
+---
+
+## Experiment-level traffic allocation
+
+The **traffic allocation** slider (5% to 100%) controls what fraction of all your store visitors are included in the experiment.
+
+Visitors outside the allocation see the default (control) experience and are **not tracked** — they do not appear in your results at all.
+
+### Example
+
+Traffic allocation: 50%, variant split: 50/50
+
+- 50% of all visitors → excluded (not tracked, see default)
+- 25% of all visitors → Control (tracked)
+- 25% of all visitors → Variant B (tracked)
+
+Traffic allocation: 100%, variant split: 50/50
+
+- 50% of all visitors → Control (tracked)
+- 50% of all visitors → Variant B (tracked)
+
+### When to lower traffic allocation
+
+Start at 100% in most cases — more traffic means faster results. Consider lowering when:
+
+- You are testing a high-risk change (e.g. checkout flow, pricing) and want to limit exposure
+- You are running multiple experiments simultaneously and want to reduce visitor overlap
+- Your store has very high traffic and reaching significance with 10% of visitors is fast enough
+
+### How exclusion works
+
+Exclusion is deterministic, not random per visit. Each visitor gets the same in/out decision every time based on their visitor ID:
+
+```js
+allocBucket = fnv(visitorId + ':' + experimentId + ':alloc') % 100
+excluded = (allocBucket >= trafficAllocation)
+```
+
+A visitor excluded from a 50% allocation will be excluded on every subsequent visit — they will always see the default experience for that experiment.
+
+---
 
 ## Variant weights
 
-Each variant has a **traffic weight** (%). Weights across all variants must sum to exactly 100.
+Variant weights control how traffic is distributed among variants for visitors who enter the experiment. All weights must sum to exactly 100.
 
-The bucketing is cumulative — for weights of 50/50:
-- Visitors with bucket 0–49 → Control
-- Visitors with bucket 50–99 → Variant B
+### Two-variant split (A/B)
 
-For a 33/33/34 three-variant split:
-- Visitors with bucket 0–32 → Control
-- Visitors with bucket 33–65 → Variant B
-- Visitors with bucket 66–99 → Variant C
+The default is 50/50. You can change it to any ratio:
+
+| Control | Variant B | Use case |
+|---|---|---|
+| 50 | 50 | Standard A/B test |
+| 70 | 30 | Conservative test — protect more visitors from a risky change |
+| 90 | 10 | Very conservative — just proving the mechanism works |
+
+### Three-variant split (A/B/C)
+
+Add a third variant and distribute the weights:
+
+| Control | Variant B | Variant C | Notes |
+|---|---|---|---|
+| 34 | 33 | 33 | Near-equal three-way split |
+| 50 | 25 | 25 | Control gets more traffic, faster reference baseline |
 
 <Warning>
-  If weights don't sum to 100, visitors in the gap will pass the allocation check but won't be assigned to any variant. They'll see the default experience and won't appear in results. The dashboard shows a warning banner when this happens.
+  Running an A/B/C test requires more total traffic to reach significance because you are splitting your sample three ways. Budget accordingly.
 </Warning>
 
-## Bucketing is deterministic
+### Unequal weights
 
-The same visitor always gets the same variant. Bucketing is based on:
+If weights do not sum to exactly 100, visitors in the gap will pass the allocation check but not be assigned to any variant. They see the default experience and are not tracked. The dashboard shows a warning when this happens.
 
+---
+
+## How bucketing works
+
+Bucketing is deterministic and based on FNV-1a hashing:
+
+```js
+bucket = fnv(visitorId + ':' + experimentId) % 100
 ```
-bucket = hash(visitorId + ':' + experimentId) % 100
-```
 
-This means:
-- Refreshing the page doesn't re-randomise
-- Clearing the `spt_asgn` cookie and revisiting will re-assign (useful for testing)
-- Two different experiments use independent hashes, so a visitor can be in both simultaneously
+The resulting bucket (0-99) is compared against cumulative variant weights:
 
-## Running multiple experiments
+| Variant | Weight | Bucket range |
+|---|---|---|
+| Control | 50 | 0-49 |
+| Variant B | 50 | 50-99 |
 
-Multiple experiments can run simultaneously. Each uses an independent hash so assignments don't interfere. Be aware that:
+For a 33/34/33 split:
 
-- **Theme tests** conflict with each other (only one `preview_theme_id` can be active)
-- **Interaction effects** — if two experiments modify the same element, results will be confounded
-- Each experiment samples from 100% of visitors independently, so a visitor can be in both
+| Variant | Weight | Bucket range |
+|---|---|---|
+| Control | 33 | 0-32 |
+| Variant B | 34 | 33-66 |
+| Variant C | 33 | 67-99 |
+
+### Key properties of this approach
+
+- **Deterministic** — the same visitor always gets the same variant
+- **Independent** — different experiments use independent inputs (`experimentId` differs), so assignment in one experiment does not affect another
+- **No database call needed** — bucketing happens entirely in the browser with inline config
+
+---
+
+## Running multiple experiments simultaneously
+
+You can run multiple experiments at the same time. Each experiment uses an independent hash, so a visitor can be in multiple experiments without interference.
+
+**Important caveats:**
+
+- **Theme tests conflict** — only one `?preview_theme_id` can be active at a time. Do not run two theme tests simultaneously.
+- **Interacting experiments** — if two experiments modify the same page element or compete for the same URL, results will be confounded. For example, a Section content test and a Theme test that both change the hero image will interfere with each other.
+- **Interaction effects** — if a visitor is in two experiments and one changes the page in a way that affects the other (e.g. a CTA test and a price test on the same PDP), CVR numbers will reflect the combined effect, not the isolated effect of either test.
+
+As a rule, try to test things that are sufficiently independent. If two tests could plausibly interact, run them sequentially.
+
+---
+
+## Changing weights on a running experiment
+
+You can technically change variant weights after an experiment is running, but it is strongly discouraged. Data collected before and after the change reflects different splits, making the total results unreliable.
+
+If you need to change the split, the cleanest approach is to:
+1. Archive the current experiment
+2. Create a new experiment with the desired weights
+3. Start fresh
+
+The data from the archived experiment is preserved and still visible in history.

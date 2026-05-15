@@ -1,47 +1,140 @@
 ---
 title: Segments
-description: Target your experiment to a specific subset of visitors.
+description: Target your experiment to a specific subset of visitors using device, UTM parameters, and referrer rules.
 ---
 
 ## What is a segment?
 
-A segment is a set of rules that filters which visitors are eligible for an experiment. Only visitors matching the segment will be bucketed — everyone else sees the default experience.
+A segment is a saved set of filtering rules. When a segment is assigned to an experiment, only visitors who match the rules are eligible for bucketing. Visitors who do not match see the default experience and are not tracked.
 
-**Use cases:**
-- Test a change only on mobile visitors
-- Run a campaign-specific experiment for paid traffic (`utm_source = google`)
-- Test a new landing page only for visitors from a specific referrer
+Segments let you run targeted experiments — for example, testing a mobile layout only on mobile visitors, or running a campaign-specific landing page test only for visitors arriving from a paid ad.
+
+---
 
 ## Creating a segment
 
-Go to **Segments → New segment** and define your rules. Rules can be combined with AND or OR logic.
+Go to **Segments → New segment** in the sidebar. Give it a descriptive name, then add one or more rules.
 
 ### Available fields
 
-| Field | Values | Evaluated |
-|---|---|---|
-| `device` | `mobile`, `tablet`, `desktop` | Client-side (window width) |
-| `utmSource` | Any string | Client-side (URL param) |
-| `utmMedium` | Any string | Client-side (URL param) |
-| `utmCampaign` | Any string | Client-side (URL param) |
-| `referrer` | Any string | Client-side (document.referrer) |
+| Field | What it evaluates |
+|---|---|
+| `device` | Visitor's device type, based on `window.innerWidth` at script load time |
+| `utmSource` | `utm_source` query parameter in the page URL |
+| `utmMedium` | `utm_medium` query parameter in the page URL |
+| `utmCampaign` | `utm_campaign` query parameter in the page URL |
+| `referrer` | `document.referrer` — the URL of the page the visitor came from |
+
+### Device detection
+
+Device is determined by screen width at the moment the script runs:
+
+| Width | Device |
+|---|---|
+| Less than 768px | `mobile` |
+| 768px to 1023px | `tablet` |
+| 1024px and above | `desktop` |
+
+Note that this is viewport width, not physical device type. A tablet in landscape mode may be classified as desktop. A desktop browser window resized to narrow width may be classified as mobile.
 
 ### Operators
 
-| Operator | Meaning |
-|---|---|
-| `eq` | Exactly equals |
-| `neq` | Does not equal |
-| `contains` | String contains |
+| Operator | Meaning | Example |
+|---|---|---|
+| `eq` | Exactly equal (case-sensitive) | `utmSource eq google` |
+| `neq` | Does not equal | `device neq mobile` |
+| `contains` | String contains the value | `referrer contains facebook.com` |
+
+### Combining rules
+
+Rules within a segment can be combined with **AND** or **OR** logic:
+
+- **AND** — visitor must match all rules to be eligible
+- **OR** — visitor must match at least one rule to be eligible
+
+You can mix AND and OR within the same segment. For more complex logic, create multiple segments and duplicate experiments.
+
+---
+
+## Segment examples
+
+### Mobile only
+
+```
+device eq mobile
+```
+
+Only visitors on screens narrower than 768px are included.
+
+### Paid Google traffic
+
+```
+utmSource eq google
+AND
+utmMedium eq cpc
+```
+
+Only visitors arriving from a Google paid ad (with `utm_source=google&utm_medium=cpc` in the URL).
+
+### Social traffic
+
+```
+utmMedium eq social
+OR
+referrer contains instagram.com
+OR
+referrer contains facebook.com
+```
+
+Visitors from any social channel, whether tracked via UTM or referrer.
+
+### Exclude direct traffic
+
+```
+referrer neq ""
+```
+
+Only visitors who arrived from a referring page (i.e. not direct navigation or a typed URL).
+
+---
 
 ## Assigning a segment to an experiment
 
-On the experiment **Overview** tab, use the **Segment** dropdown to assign a saved segment. You can change this at any time, even on a running experiment.
+On the experiment **Overview** tab, use the **Segment** dropdown to assign a saved segment. You can change this at any time, even while the experiment is running.
 
-## Client-side evaluation
+Changing a segment on a running experiment takes effect immediately for new visitors. Existing visitors who were already assigned retain their assignment regardless of whether they still match the segment.
 
-Segment rules are evaluated in the browser before any bucketing happens. Fields like `device`, `utmSource`, and `referrer` are available immediately. Server-side fields (country, customer type) are not yet supported — rules with unknown fields default to allowing the visitor through.
+---
+
+## How segment evaluation works
+
+Segments are evaluated client-side in the visitor's browser, before any bucketing happens. The rules are evaluated on every page load using JavaScript:
+
+```js
+// Example: device eq mobile
+function matchesSegment(rules) {
+  var device = window.innerWidth < 768 ? 'mobile' : window.innerWidth < 1024 ? 'tablet' : 'desktop';
+  var params = new URLSearchParams(location.search);
+  // ... evaluate each rule ...
+}
+```
+
+If a visitor does not match the segment, the entire experiment is skipped — no bucketing, no assignment, no tracking.
+
+### UTM persistence
+
+UTM parameters are only present in the URL when the visitor first arrives from a link that includes them. If a visitor arrives via `?utm_source=google` on the first page, then navigates to a second page, the UTM parameters will no longer be in the URL on the second page.
+
+This means segment evaluation works best on the landing page. If your segment depends on UTM parameters, make sure your experiment applies to the landing page itself (not a page the visitor navigates to afterward).
 
 <Note>
-  Device detection uses `window.innerWidth` at script execution time: `< 768px` = mobile, `< 1024px` = tablet, `≥ 1024px` = desktop.
+  A future version will persist UTM values in a session cookie so they are available across the full visit.
 </Note>
+
+---
+
+## Limitations
+
+- **No server-side fields** — country, customer login status, purchase history, and Shopify Markets region are not available for segment rules. All evaluation happens in the browser.
+- **UTM values are not persisted** — UTM parameters must be present in the URL at the time the page loads for the rule to match.
+- **Case-sensitive matching** — `eq` and `contains` are case-sensitive. `utmSource eq Google` will not match `utm_source=google`.

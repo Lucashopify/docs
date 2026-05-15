@@ -1,51 +1,157 @@
 ---
 title: Statistical significance
-description: How Split Tester determines if results are real and not random chance.
+description: How Split Tester determines whether results are real, including p-values, confidence, SRM, and peeking bias.
 ---
 
-## What is statistical significance?
+## Why significance matters
 
-When you run an A/B test, both variants will show slightly different conversion rates just by chance — even if the change has no real effect. Statistical significance tells you how likely the observed difference is due to chance.
+When you run an A/B test, both variants will show different conversion rates even if the change has no real effect — just by chance. The more you look at results (especially early), the more likely you are to observe a difference that looks meaningful but is actually random noise.
 
-Split Tester uses a **two-proportion z-test** to calculate a p-value.
+Statistical significance is a measure of how likely the observed difference is due to chance. Split Tester uses a **two-proportion z-test** to compute a p-value for each treatment variant compared to control.
+
+---
 
 ## P-value
 
-The p-value is the probability of observing a difference this large (or larger) if there were actually no real effect.
+The p-value is the probability of seeing a difference at least this large between variants, assuming the change has no real effect.
 
-| P-value | Interpretation |
+**Example:** You observe a 15% lift in CVR. The p-value is 0.04. This means: if the change had zero real effect, you would see a 15% or larger difference by chance alone in 4% of experiments. At p < 0.05, you have enough evidence to conclude the difference is real.
+
+### Interpretation guide
+
+| P-value | What it means |
 |---|---|
-| `p < 0.05` | Significant — less than 5% chance the result is random |
-| `p ≥ 0.05` | Not yet significant — keep running |
+| < 0.01 | Very strong evidence — only 1% chance the result is random |
+| 0.01 to 0.05 | Significant — strong evidence, standard threshold |
+| 0.05 to 0.10 | Marginal — some signal, but not conclusive |
+| > 0.10 | No significant evidence — keep running or revisit the hypothesis |
 
-A p-value of `0.03` means there's a 3% chance you'd see a difference this large by random chance alone.
+### What p-value does not mean
 
-<Warning>
-  p < 0.05 is not proof the effect is real. It means you have 95% confidence. In practice, always combine statistical significance with business sense — a 0.1% CVR lift may be significant but not worth the engineering cost to ship.
-</Warning>
+A p-value of 0.04 does not mean there is a 96% chance the variant is better. It means there is a 4% chance you would see this result if the change had no effect. These sound similar but are importantly different.
+
+It also does not tell you anything about the size of the effect. A tiny effect can be statistically significant with enough data. Always look at lift and RPV alongside the p-value.
+
+---
+
+## The z-test formula
+
+Split Tester uses a two-proportion z-test:
+
+```
+p1 = control conversion rate = controlOrders / controlSessions
+p2 = variant conversion rate = variantOrders / variantSessions
+p_pooled = (controlOrders + variantOrders) / (controlSessions + variantSessions)
+
+SE = sqrt(p_pooled * (1 - p_pooled) * (1/controlSessions + 1/variantSessions))
+
+z = (p2 - p1) / SE
+```
+
+The z-score is then converted to a two-tailed p-value using the standard normal distribution.
+
+---
 
 ## Confidence level
 
-Split Tester uses 95% confidence (α = 0.05) as the threshold. This is the standard for e-commerce A/B testing. A higher threshold (99%) reduces false positives but requires more data.
+Split Tester uses **95% confidence** (α = 0.05) as the default threshold. This means:
+
+- If you run 100 experiments on changes that have no real effect, you expect about 5 to show false positives (p < 0.05)
+- A false positive rate of 5% is the standard for e-commerce A/B testing
+
+A higher confidence threshold (99%) would reduce false positives but requires roughly double the sample size. For most Shopify stores, 95% is the right balance between sensitivity and sample efficiency.
+
+---
+
+## Statistical power
+
+Power is the probability of detecting a real effect when one exists. Split Tester targets **80% power** in its sample size guidance, which is the industry standard.
+
+At 80% power and 95% confidence, if there is a real 10% relative lift:
+- 80% of the time your test will detect it (p < 0.05)
+- 20% of the time you will get an inconclusive result (false negative)
+
+To increase power, you need more sessions per variant. See [Metrics explained](/results/metrics) for a sample size table.
+
+---
 
 ## Sample Ratio Mismatch (SRM)
 
-An SRM occurs when the actual visitor split between variants is significantly different from the configured weights (e.g. you set 50/50 but see 60/40 in practice). This indicates a problem in the assignment pipeline — results from an SRM-flagged experiment cannot be trusted.
+SRM occurs when the actual distribution of visitors between variants does not match the configured weights.
 
-Split Tester detects SRM using a chi-squared test (p < 0.01, requires ≥100 visitors per variant). If detected, a warning is shown in the results table and the auto-stop guardrail can pause the experiment.
+**Example:** You set a 50/50 split. After 1,000 sessions, Control has 620 visitors and Variant B has 380. That is a 62/38 split — a significant mismatch.
 
-**Common causes of SRM:**
-- Bot traffic disproportionately hitting one variant
-- Caching that bypasses the bucketing script
-- Two simultaneous theme tests conflicting
-- Variant causing high bounce rate before the event fires
+### Why SRM invalidates results
 
-## Peeking
+When one variant receives disproportionately more traffic than expected, it suggests something is systematically wrong with the assignment process. Results from an SRM experiment cannot be trusted because the comparison groups are not equivalent.
 
-Peeking means checking results and stopping early when you see significance — before you planned to. This leads to a high false-positive rate because p-values fluctuate over the life of an experiment and will cross 0.05 by chance.
+### How Split Tester detects SRM
 
-**Split Tester's guardrails:**
-- Minimum runtime warning (default 7 days)
-- The conclusion banner only appears after ≥100 sessions per variant
+Split Tester runs a chi-squared test on the visitor counts after each variant reaches 100 visitors:
 
-Resist the urge to stop early, even when results look good.
+```
+chi2 = sum over variants: (observed - expected)^2 / expected
+```
+
+If `p < 0.01` (i.e. the observed split is very unlikely given the configured weights), SRM is flagged. The results table shows a warning and the auto-pause guardrail can pause the experiment.
+
+### Common causes of SRM
+
+| Cause | What happens |
+|---|---|
+| Bot traffic | Bots disproportionately hit one variant — often the control, since the redirect for Variant B may confuse bots |
+| CDN/page caching | Cached pages bypass the bucketing script — visitors on cached pages are not assigned correctly |
+| Two simultaneous theme tests | Both try to set `?preview_theme_id` — the second one overrides the first, causing assignment conflicts |
+| Variant causing high bounce rate | If Variant B is broken and visitors leave immediately before the first page view event fires, sessions are undercounted |
+| Cookie blocking | Some visitors have cookies blocked — they get re-assigned on every visit, which can skew distribution |
+
+### Fixing SRM
+
+1. Identify the cause using the list above
+2. Fix the root issue (disable caching on the affected pages, remove conflicting tests, fix broken variants)
+3. Archive the experiment and start a new one — data from an SRM experiment cannot be salvaged
+
+---
+
+## Peeking and early stopping
+
+**Peeking** is checking your results before you planned to and stopping the experiment if results look significant. This is one of the most common mistakes in A/B testing.
+
+### Why peeking is a problem
+
+P-values fluctuate over the life of an experiment. Early on, with small sample sizes, random variation can make a p-value dip below 0.05 even when there is no real effect. If you stop every time p < 0.05, you will have a far higher false positive rate than 5%.
+
+Research shows that "continuous monitoring" (checking and stopping early whenever significant) can push the false positive rate above 30% — meaning nearly a third of your "winning" experiments are actually noise.
+
+### Split Tester's minimum runtime
+
+Split Tester shows a minimum runtime warning for experiments shorter than 7 days. The conclusion banner only becomes active after:
+- At least 7 days have elapsed (one full day-of-week cycle)
+- At least 100 sessions per variant
+
+These are soft guardrails. You can still view your results at any time — but resist the urge to act on them before these conditions are met.
+
+### The right approach
+
+Decide your minimum sample size and runtime **before** starting the experiment. Do not look at results with the intention of stopping early. Let the experiment run to your planned endpoint and then evaluate.
+
+---
+
+## Multiple testing
+
+If you run many experiments and declare winners at p < 0.05, you will accumulate false positives over time. With 20 experiments on changes that have no real effect, you expect about 1 false positive.
+
+For a portfolio of many experiments, consider requiring a higher confidence level (p < 0.01) for high-stakes decisions, or using a consistent methodology across all tests to maintain your overall false discovery rate.
+
+---
+
+## Practical significance vs statistical significance
+
+A result can be statistically significant but practically useless:
+
+- **Big lift, high sessions, p < 0.001** — the result is credible, the lift is real. Ship it.
+- **Small lift, high sessions, p = 0.04** — the result is real, but 0.3% CVR lift may not be worth the engineering cost to ship.
+- **Big lift, low sessions, p = 0.04** — borderline. The lift looks promising but the confidence is right at threshold with limited data. Consider running longer.
+- **Small lift, low sessions, p = 0.15** — inconclusive. Keep running or archive.
+
+Always combine statistical significance with the practical size of the effect and the cost of acting on it.

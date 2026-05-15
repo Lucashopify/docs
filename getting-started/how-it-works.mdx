@@ -1,68 +1,227 @@
 ---
 title: How it works
-description: Visitor bucketing, assignment persistence, and the data pipeline explained.
+description: A technical walkthrough of visitor bucketing, assignment persistence, event tracking, and the results pipeline.
+---
+
+## Overview
+
+Split Tester works entirely through a JavaScript embed on the storefront and a server-side rollup pipeline. Here is the full data flow from visitor arrival to a result in the dashboard.
+
+```
+Visitor arrives
+    → JS reads experiment config from window.__SPT_CFG_INLINE__
+    → Visitor ID assigned or read from cookie
+    → Visitor bucketed into variant (deterministic hash)
+    → Variant applied (redirect, theme swap, content injection, price change)
+    → Events fired (PAGE_VIEW, ADD_TO_CART, INITIATE_CHECKOUT)
+    → On purchase: webhook fires → order attributed to variant
+    → Hourly rollup computes stats per variant
+    → Dashboard shows results
+```
+
 ---
 
 ## Visitor identification
 
-Each visitor gets a random 128-bit ID (`spt_vid` cookie) on their first visit. This ID is set for 1 year and is used for all bucketing decisions. The same visitor always gets the same variant.
+Every visitor to your store gets a **visitor ID** (`spt_vid` cookie) on their first page view. This is a randomly generated 128-bit token:
 
-## Bucketing
-
-Split Tester uses **FNV-1a hashing** to deterministically assign visitors to variants:
-
+```js
+// Four 32-bit random values concatenated into a 32-char hex string
+visitorId = r32() + r32() + r32() + r32()
 ```
+
+The cookie is set with:
+- `Max-Age: 31536000` (1 year)
+- `Path: /`
+- `SameSite: Lax`
+- `Secure` on HTTPS
+
+The visitor ID never changes for a given browser profile unless the visitor clears cookies. Returning visitors always get the same variant.
+
+---
+
+## Experiment config delivery
+
+Experiment configuration (which experiments are running, which variants exist, traffic weights) is stored in a **Shopify shop metafield** and injected into the page by the theme app extension at Liquid render time:
+
+```liquid
+<script>
+  window.__SPT_CFG_INLINE__ = {{ shop.metafields.split_test_app.config | json }};
+</script>
+```
+
+This means the JS never makes an API call to fetch config. Everything needed to assign visitors is available synchronously on page load. There is zero added latency on the critical path.
+
+---
+
+## Visitor bucketing
+
+### Step 1: Traffic allocation check
+
+Before a visitor is assigned to any variant, they are first checked against the experiment's traffic allocation percentage. This controls what fraction of all visitors enter the experiment:
+
+```js
+allocBucket = fnv(visitorId + ':' + experimentId + ':alloc') % 100
+if (allocBucket >= trafficAllocation) {
+  // Visitor is excluded — sees default experience, not tracked
+  continue;
+}
+```
+
+With 50% traffic allocation, only half of all visitors enter the experiment. The rest see the default experience and are never recorded.
+
+### Step 2: Variant assignment
+
+For visitors who pass the allocation check, their variant is determined by a second hash:
+
+```js
 bucket = fnv(visitorId + ':' + experimentId) % 100
 ```
 
-The bucket value (0–99) is compared against cumulative variant weights. For a 50/50 split, visitors with bucket 0–49 get the control and 50–99 get the variant.
+The bucket value (0-99) is compared against cumulative variant weights. For a 50/50 split:
+- Bucket 0-49 → Control
+- Bucket 50-99 → Variant B
 
-This approach means:
-- No database lookup needed on the storefront (zero latency)
-- The same visitor always gets the same variant across sessions
-- Adding a new experiment doesn't affect existing assignments
+For a 33/33/34 three-variant split:
+- Bucket 0-32 → Control
+- Bucket 33-65 → Variant B
+- Bucket 66-99 → Variant C
 
-## Traffic allocation
+### FNV-1a hashing
 
-Before bucketing into a variant, each visitor is first checked against the experiment's **traffic allocation**:
+The hash function is **FNV-1a 32-bit**. It is fast, deterministic, and produces well-distributed values. The same input always produces the same output, which guarantees that the same visitor always gets the same variant even across different page loads and devices (as long as the cookie is present).
 
+```js
+function fnv(s) {
+  var h = 2166136261;
+  for (var i = 0; i < s.length; i++) {
+    h = (h ^ s.charCodeAt(i));
+    h = (h * 16777619) >>> 0;
+  }
+  return h;
+}
 ```
-allocBucket = fnv(visitorId + ':' + experimentId + ':alloc') % 100
-if allocBucket >= trafficAllocation → visitor is excluded
-```
 
-A 50% traffic allocation means only half of all visitors enter the experiment. The rest see the default experience and are not tracked.
+---
 
 ## Assignment persistence
 
-Once a visitor is assigned, their assignments are stored in the `spt_asgn` cookie as a JSON map:
+Once a visitor is assigned, their assignments are stored in the `spt_asgn` cookie as a JSON object:
 
 ```json
-{ "experiment-id-1": "variant-id-a", "experiment-id-2": "variant-id-b" }
+{
+  "clxyz123...": "clvarA...",
+  "clxyz456...": "clvarB..."
+}
 ```
 
-This ensures consistent experiences across page loads and sessions.
+Keys are experiment IDs, values are variant IDs. On subsequent page loads, the JS reads this cookie and skips re-assignment — the visitor stays in their original variant for the lifetime of the experiment.
 
-## Config delivery
+**Re-assignment only happens when:**
+- The `spt_asgn` cookie is cleared
+- The visitor uses a different browser or device (separate cookie jar)
+- The experiment is not in the stored assignments (new experiment, or first visit after experiment started)
 
-Experiment configuration is stored in a Shopify **shop metafield** (`split_test_app.config`). The theme embed reads this at Liquid render time and injects it as `window.__SPT_CFG_INLINE__` — so there are zero API calls on the critical path.
+---
+
+## Variant application
+
+After assignment, the JS applies the variant experience before revealing the page. The method varies by experiment type:
+
+| Type | How it is applied |
+|---|---|
+| **Theme** | `?preview_theme_id=<id>` appended to URL, page reloads with alternate theme |
+| **URL Redirect** | `window.location.replace(destinationUrl)` — replaces history entry |
+| **Template** | `?view=<suffix>` appended to URL — Shopify loads alternate template |
+| **Section content** | HTML injected into the Variant Content block container before page is revealed |
+| **Price (Plus)** | Price elements in DOM updated; cart attribute `spt_asgn` written for Cart Transform |
+| **Price (non-Plus)** | URL redirect to duplicate product page |
+
+All redirect-based methods happen before the page is shown to the visitor. The `<html>` element gets a class `spt-loading` during assignment, which your theme can use to hide content until assignment is complete. After assignment, it switches to `spt-ready`.
+
+---
 
 ## Event tracking
 
-After bucketing, the JS fires:
+Three types of storefront events are tracked:
 
-| Event | When |
-|---|---|
-| `PAGE_VIEW` | Every page load |
-| `ADD_TO_CART` | Form submit to `/cart/add`, cart drawer events, or ATC button click |
-| `INITIATE_CHECKOUT` | Checkout button click or form submit to `/checkout` |
+### PAGE_VIEW
 
-Events are sent via `navigator.sendBeacon` (fire-and-forget, non-blocking).
+Fires on every page load (after `DOMContentLoaded`). Sends:
+- `visitorId` from the `spt_vid` cookie
+- Current assignments from the `spt_asgn` cookie
+- Current page URL
+- Device type (based on `window.innerWidth`)
+- Timestamp
+
+For URL Redirect experiments with a configured source URL, page views are only counted when the visitor is on the source URL (control) or the destination URL (variant). Page views on unrelated pages are not counted.
+
+### ADD_TO_CART
+
+Detected by three methods simultaneously to ensure nothing is missed:
+
+1. **Form submit** - intercepts any form submission to `/cart/add`
+2. **Cart events** - listens for `cart:add` and `items-added` custom DOM events (fired by many themes)
+3. **Button click** - monitors clicks on elements matching standard ATC button selectors
+
+Each detection method is debounced to avoid duplicates. A single ATC action produces one event.
+
+### INITIATE_CHECKOUT
+
+Fires when a visitor begins the checkout process. Detected by:
+1. Form submit to `/checkout`
+2. Click on checkout button selectors (cart drawer, cart page)
+
+### PURCHASE
+
+Not fired by the JS. Purchases are attributed server-side via Shopify's `orders/paid` webhook. The webhook reads the `spt_vid` and `spt_asgn` values from the order's cart attributes (written to the cart as hidden properties on every page load) and creates an `Order` record in the database.
+
+This approach is more reliable than client-side purchase tracking because it fires even when the visitor closes the browser tab before your confirmation page loads.
+
+---
 
 ## Order attribution
 
-When an order is created, Shopify fires a webhook. Split Tester reads the `_spt_vid` and `_spt_asgn` cart attributes (written by the JS on every page load) to attribute the order to the correct experiment and variant.
+The JS writes two cart attributes on every page load:
+
+```js
+// Written to the Shopify cart via /cart/update.js
+{
+  "spt_vid": "<visitorId>",
+  "spt_asgn": "<JSON assignments>"
+}
+```
+
+These attributes travel with the cart through checkout and appear on the Shopify order as `note_attributes`. When the `orders/paid` webhook fires, Split Tester reads these values and creates an attribution record linking the order to the correct experiment and variant.
+
+**Buy It Now buttons** are handled separately. Since BIN bypasses the cart, the JS injects hidden `<input>` fields into product forms with `name="properties[spt_asgn]"` — these become line item properties on the order and are read during attribution.
+
+---
+
+## Consent handling
+
+Split Tester respects Shopify's Customer Privacy API. Before sending any analytics events (PAGE_VIEW, ADD_TO_CART, etc.), the embed checks:
+
+```js
+Shopify.customerPrivacy.analyticsProcessingAllowed()
+```
+
+If consent is not granted, event sending is skipped. Visitor ID assignment and variant bucketing still happen (so the visitor sees a consistent experience), but no data is sent to Split Tester's servers.
+
+---
 
 ## Results rollup
 
-Results are computed hourly. Each rollup window aggregates sessions, conversions, revenue, and statistical metrics (p-value, lift %) per variant. Clicking **↻ Refresh results** triggers an immediate rollup.
+Raw events in the database are aggregated into experiment results by a rollup job that runs every hour. The rollup computes per-variant:
+
+- Sessions (unique page views)
+- Add to cart events
+- Checkout initiations
+- Orders and revenue
+- Conversion rate (CVR)
+- Revenue per visitor
+- Average order value
+- Statistical significance (p-value via two-proportion z-test)
+- Lift vs control
+
+You can trigger an immediate rollup at any time by clicking **Refresh results** on the Results tab.

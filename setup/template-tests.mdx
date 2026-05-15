@@ -1,77 +1,146 @@
 ---
 title: Template tests
-description: A/B test full Shopify page templates — product pages, collections, and more.
+description: How to A/B test full Shopify page templates — product pages, collections, and more.
 ---
 
-Template tests let you compare two completely different page layouts by leveraging Shopify's native alternate template system. Variant visitors are routed to `?view=<suffix>` which loads your alternate template server-side — no JavaScript injection needed.
+## What is a template test?
+
+A template test compares two different Shopify page templates against each other. Unlike a Section content test (which injects HTML into a specific spot), a template test replaces the entire page layout for variant visitors — different sections, different order, different blocks.
+
+Template tests are ideal for:
+- Testing a product page redesign (different section order, new blocks, removed elements)
+- Comparing a simple vs feature-rich collection page layout
+- Testing two completely different homepage designs
+
+---
+
+## How it works
+
+Shopify supports alternate templates via the `?view=` URL parameter. When `?view=my-test` is appended to a product URL, Shopify renders `templates/product.my-test.json` instead of the default `templates/product.json`. The full Liquid template renders server-side — sections, metafields, blocks, and schema all work normally.
+
+When a variant visitor loads a page matching the template type (e.g. any product page for a product template test):
+
+1. The Split Tester script checks if `?view=<suffix>` is already in the URL
+2. If not, it redirects to the same URL with `?view=<suffix>` appended
+3. Shopify loads the alternate template and renders the page normally
+4. The redirect happens before the page is visible to the visitor — no flash
+
+Control visitors are never redirected — they see the default template.
+
+---
 
 ## Supported template types
 
-- Product pages (`templates/product.json`)
-- Collection pages (`templates/collection.json`)
-- Regular pages (`templates/page.json`)
-- Homepage (`templates/index.json`)
-- Blog listing (`templates/blog.json`)
-- Article pages (`templates/article.json`)
-
-## Setup
-
-### Step 1 — Duplicate your template
-
-In your Shopify theme code (use the Theme Editor's **Edit code** view, or a local development setup):
-
-1. Go to the `templates/` directory
-2. Copy your target template (e.g. `product.json`)
-3. Paste it with a new name — add a suffix after the type: `product.my-test.json`
-
-The suffix (`my-test`) is what you'll enter in Split Tester.
-
-### Step 2 — Customise the duplicate
-
-Make your layout changes in the Theme Editor:
-
-1. In **Online Store → Themes → Customize**, open the template dropdown (top center)
-2. Select your alternate template (e.g. **Products / my-test**)
-3. Rearrange sections, add/remove blocks, change settings
-4. Save
-
-### Step 3 — Create the experiment
-
-1. In Split Tester, go to **New experiment** and choose **Template test**
-2. Select the **Template type** (e.g. Product)
-3. The **Variant template** dropdown will show all alternate templates found in your live theme
-4. Select your duplicate template and create the experiment
-
-### Step 4 — Configure and start
-
-The control variant uses the default template automatically — no configuration needed. The variant is pre-configured with the view name from Step 3. Click **Start experiment**.
-
-## How routing works
-
-When a variant visitor lands on a product page:
-
-1. The JS checks if `?view=my-test` is in the URL
-2. If not, it redirects to the same URL with `?view=my-test` appended
-3. Shopify loads `templates/product.my-test.json` server-side
-4. All Liquid, sections, and metafields render normally
-
-The redirect happens before the page is revealed, so there's no flash.
-
-## Routing scope
-
-Template tests only redirect on matching URL patterns. A product template test won't append `?view=` to collection or homepage URLs.
-
-| Template type | Applied on |
+| Template type | Applies to URLs matching |
 |---|---|
 | product | `/products/*` |
 | collection | `/collections/*` |
 | page | `/pages/*` |
-| index | `/` |
+| index | `/` (homepage only) |
 | blog | `/blogs/<handle>` |
 | article | `/blogs/<handle>/<slug>` |
 
-## Notes
+---
 
-- Shopify falls back to the default template if the alternate doesn't exist — so a misconfigured test won't break the page
-- The `?view=` parameter persists as visitors navigate within the same template type
-- No app block needed — this is entirely URL-based routing
+## Setup
+
+### Step 1: Duplicate your template file
+
+Open your theme's code editor. In Shopify Admin, go to **Online Store → Themes** and click **Edit code** on your live theme (or use a local development setup).
+
+Navigate to the `templates/` directory. Find the template you want to test:
+
+- Product pages: `product.json`
+- Collection pages: `collection.json`
+- Regular pages: `page.json`
+- Homepage: `index.json`
+
+Click the template file to open it, then click **...** and select **Duplicate** (or copy the file contents and create a new file manually).
+
+Name the new file by appending a suffix after the type:
+
+- `product.json` → `product.my-test.json`
+- `collection.json` → `collection.new-layout.json`
+- `page.json` → `page.redesign.json`
+
+The suffix (`my-test`, `new-layout`, `redesign`) is what you will enter in Split Tester. It can be any lowercase letters, numbers, or hyphens.
+
+<Warning>
+  Do not use spaces or special characters in your suffix. Stick to lowercase letters, numbers, and hyphens. The suffix becomes a URL parameter, so `product.My Test.json` would break URLs.
+</Warning>
+
+### Step 2: Customise the duplicate template
+
+Go to **Online Store → Themes → Customize** and open the template dropdown at the top center of the Theme Editor. Select your new alternate template (e.g. **Products / my-test**).
+
+Make your layout changes:
+- Rearrange sections by dragging
+- Add new sections from the section library
+- Remove sections
+- Change block content and settings within sections
+
+**Save** when done.
+
+### Step 3: Create the experiment in Split Tester
+
+1. Go to **Experiments → New experiment**
+2. Select **Template** as the experiment type
+3. Choose the **template type** (Product, Collection, Page, etc.)
+4. The **variant template** dropdown will populate with all alternate templates found in your live theme — select the one you just created
+5. Set your traffic split and segment (if applicable)
+6. Click **Create experiment**
+
+### Step 4: Start the experiment
+
+The Control variant is automatically configured to use the default template — no setup needed.
+
+The Variant B configuration is pre-filled with the alternate template view name you selected. Click **Start experiment** on the Overview tab.
+
+---
+
+## How routing is scoped
+
+Template tests only apply redirects on matching page types. A product template test does not affect collection pages or the homepage.
+
+If a visitor is assigned to a product template test and navigates to a collection page, they see the default collection template. When they navigate back to a product page, they see the alternate product template.
+
+The `?view=` parameter is applied on navigation — not stored in the assignment cookie. Each product page load checks whether the parameter is in the URL and adds it if not.
+
+---
+
+## Multiple template tests
+
+You can run multiple template tests simultaneously as long as they are for different template types. For example:
+
+- A product template test and a collection template test can run at the same time without conflict
+- Two simultaneous product template tests will conflict (both will try to append `?view=...` to product URLs)
+
+---
+
+## Comparing to Theme tests
+
+| | Template test | Theme test |
+|---|---|---|
+| Scope | One page type only | Every page on the store |
+| What changes | Sections and layout for that template | Entire theme (styles, JS, all templates) |
+| Requires code access | Yes (to duplicate template file) | No |
+| Simultaneous with others | Yes (different page types) | One at a time |
+| Shopify mechanism | `?view=suffix` | `?preview_theme_id=id` |
+
+Use a Template test when you want to redesign a specific page type. Use a Theme test when you want to compare two complete design systems.
+
+---
+
+## Notes and edge cases
+
+**Shopify fallback behaviour**
+If Shopify cannot find the alternate template file, it falls back to the default template silently. This means a misconfigured test (wrong suffix, deleted file) will not break the page — it will just show the default template for all visitors. Check that the file exists in your theme code if the variant is not applying.
+
+**The `?view=` parameter persists on navigation**
+When a visitor on the alternate template navigates to another page of the same type (e.g. from one product to another), the `?view=` parameter is preserved in the URL if they navigate via links that include it. The Split Tester script re-applies `?view=` on every product page load, so even if the parameter is dropped, it is added back.
+
+**Theme Editor shows alternate template in preview**
+When you open the alternate template in the Theme Editor, changes you make are isolated to that template. They do not affect the default template. This is expected behaviour.
+
+**Do not delete the alternate template while the experiment is running**
+If you delete the template file, variant visitors will fall back to the default template — effectively seeing the control experience. Shopify does not error when the template is missing; it silently falls back.

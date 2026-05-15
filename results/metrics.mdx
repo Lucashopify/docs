@@ -1,53 +1,183 @@
 ---
 title: Metrics explained
-description: Every metric in the results table and what it tells you.
+description: A detailed breakdown of every metric in the results table and how each one is calculated.
 ---
 
-## Results table columns
+## Sessions
 
-| Column | Definition |
-|---|---|
-| **Sessions** | Number of PAGE_VIEW events for this variant |
-| **Orders** | Attributed orders (from webhooks via cart attributes) |
-| **CVR** | Orders ÷ Sessions — the conversion rate |
-| **ATC Rate** | Add-to-cart events ÷ Sessions |
-| **Checkout Rate** | Initiate-checkout events ÷ Sessions |
-| **Revenue** | Total order revenue attributed to this variant |
-| **Rev / visitor** | Revenue ÷ Sessions — revenue per visitor |
-| **AOV** | Revenue ÷ Orders — average order value |
-| **Lift** | Percentage improvement in CVR vs control |
+**Definition:** The number of PAGE_VIEW events recorded for this variant.
 
-## Which metric to optimise for?
+**What it is not:** Sessions in Split Tester are not the same as Shopify Analytics sessions or Google Analytics sessions. A Split Tester session is any page view by a visitor who is assigned to this variant. A single visitor browsing 5 pages generates 5 sessions.
 
-For most Shopify stores, **CVR** (conversion rate) is the primary metric. It directly measures whether the variant drives more purchases.
+**Why it matters:** Sessions is your sample size. More sessions = more reliable results. Aim for at least 100 per variant before drawing any conclusions.
 
-**Revenue per visitor** is better than CVR when you're testing price changes or upsell flows — a variant could have lower CVR but higher AOV, making it more profitable overall.
+**For URL Redirect and Price experiments:** Sessions are scoped to the relevant product or landing page URL, not the whole store. A visitor in a price experiment who visits other pages on the store does not add to the price experiment's session count.
 
-**ATC Rate** is a useful leading indicator — it moves faster than CVR so you can spot direction early. Don't conclude from ATC alone.
+---
+
+## Orders
+
+**Definition:** Orders attributed to this variant via cart attributes (`spt_vid` and `spt_asgn`).
+
+**How attribution works:** When a visitor's order completes, Shopify fires a webhook. Split Tester reads the visitor's cart attributes from the order's `note_attributes` and matches them to the correct experiment and variant. If the cart attributes are missing (e.g. the visitor cleared cookies between adding to cart and checking out), the order is not attributed.
+
+**Attribution window:** There is no fixed attribution window. An order is attributed to the variant the visitor was in at the time they were last seen on the store (their most recent cart attribute write). Visitors who abandon cart for weeks and return to complete the order may still be attributed correctly if their assignment cookie is still set.
+
+---
+
+## CVR (Conversion Rate)
+
+**Definition:** Orders / Sessions
+
+**Formula:**
+```
+CVR = orders / sessions
+```
+
+**Example:** 12 orders from 400 sessions = 3.0% CVR
+
+**Primary metric for most tests.** CVR directly measures how many visitors completed a purchase. It is the standard optimisation target for A/B testing on e-commerce stores.
+
+**Limitations:** CVR can be misleading in isolation for price tests. A lower price may increase CVR but decrease revenue per visitor. Always check RPV alongside CVR for price experiments.
+
+---
+
+## ATC Rate (Add to Cart Rate)
+
+**Definition:** ADD_TO_CART events / Sessions
+
+**Formula:**
+```
+ATC Rate = add_to_cart_events / sessions
+```
+
+**Use as a leading indicator.** ATC rate moves faster than CVR because many visitors add to cart without completing a purchase. If your experiment is affecting the add-to-cart stage, you will see it here before it shows up in CVR.
+
+**Caution:** Do not conclude from ATC rate alone. An increase in ATC rate that does not translate to increased CVR may mean the variant is attracting more casual interest without improving purchase intent. Look at the full funnel.
+
+---
+
+## Checkout Rate
+
+**Definition:** INITIATE_CHECKOUT events / Sessions
+
+**Formula:**
+```
+Checkout Rate = checkout_events / sessions
+```
+
+**Funnel position:** Checkout rate sits between ATC rate and CVR. A visitor who adds to cart but does not initiate checkout is abandoning at the cart stage. A visitor who initiates checkout but does not order is abandoning at the checkout stage.
+
+**Not available for price experiments.** Checkout happens from the cart page, not the product page. For price tests, the checkout action is too far removed from the tested product to be reliably attributed.
+
+---
+
+## Revenue
+
+**Definition:** Total order revenue attributed to this variant, in your store's base currency.
+
+**Source:** Pulled from `order.total_price` on attributed orders via the `orders/paid` webhook.
+
+**Note on refunds:** Refunded orders are currently counted in revenue as originally reported. Refunds are not subtracted. This may change in a future version.
+
+---
+
+## Revenue per Visitor (RPV)
+
+**Definition:** Revenue / Sessions
+
+**Formula:**
+```
+RPV = total_revenue / sessions
+```
+
+**Example:** $1,200 revenue from 400 sessions = $3.00 RPV
+
+**Most important metric for price tests.** RPV captures the combined effect of conversion rate and order value. A variant that converts fewer visitors but at a much higher price could have better RPV than a high-CVR low-price variant.
+
+For most e-commerce experiments, RPV is the metric closest to the actual business goal (revenue), which is why it should sit alongside CVR in your analysis.
+
+---
+
+## AOV (Average Order Value)
+
+**Definition:** Revenue / Orders
+
+**Formula:**
+```
+AOV = total_revenue / orders
+```
+
+**Use case:** AOV is useful when your experiment targets upsell, cross-sell, or bundle behaviour. A variant with the same CVR but higher AOV is generating more revenue per customer.
+
+**Caution:** AOV has high variance — a single large order can dramatically skew it on experiments with low order counts. Weight it less heavily early in an experiment.
+
+---
 
 ## Lift
 
-Lift is calculated as:
+**Definition:** Percentage improvement in CVR compared to the control variant.
 
+**Formula:**
 ```
 lift = (variantCVR - controlCVR) / controlCVR
 ```
 
-A lift of `+12.5%` means the variant converts 12.5% more visitors than control, not 12.5 percentage points more.
+**Example:** Control CVR is 2.0%, Variant B CVR is 2.4%. Lift = (2.4 - 2.0) / 2.0 = +20%.
+
+**What lift means:** The variant converts 20% more visitors than the control — not 20 percentage points more (that would be an extraordinary result). A lift of +20% on a 2% CVR baseline means variant CVR is 2.4%.
+
+**Negative lift:** If the variant is performing worse than control, lift will be negative. A lift of -10% means the variant is hurting conversion rate.
+
+---
+
+## P-value
+
+**Definition:** The probability of observing a CVR difference this large (or larger) if there were actually no real effect.
+
+**Threshold:** Split Tester uses p < 0.05 (95% confidence) as the significance threshold.
+
+| P-value | Interpretation |
+|---|---|
+| 0.01 | 1% chance the result is random — high confidence |
+| 0.03 | 3% chance — significant |
+| 0.05 | Exactly at the threshold — borderline |
+| 0.10 | 10% chance — not significant, keep running |
+| 0.50 | 50% chance — no signal at all |
+
+**How it is calculated:** Split Tester uses a **two-proportion z-test** comparing the conversion rates of each treatment variant against the control.
+
+See [Statistical significance](/results/significance) for a full explanation.
+
+---
 
 ## Sample size guidance
 
-As a rough guide, you need approximately:
+The number of sessions you need depends on your baseline CVR and the minimum lift you want to detect reliably.
 
-| CVR | Minimum sessions per variant for 80% power |
+The table below shows approximate sessions needed per variant for 80% statistical power at 95% confidence, detecting a 10% relative lift:
+
+| Baseline CVR | Sessions per variant |
 |---|---|
-| 1% | ~10,000 |
-| 2% | ~5,000 |
-| 5% | ~2,000 |
-| 10% | ~1,000 |
+| 0.5% | ~50,000 |
+| 1% | ~25,000 |
+| 2% | ~12,500 |
+| 3% | ~8,000 |
+| 5% | ~5,000 |
+| 10% | ~2,500 |
 
-These are estimates for detecting a 10% relative lift. Smaller expected lifts require more sessions.
+These are rough estimates. Smaller expected lifts or higher confidence thresholds require more sessions. Larger expected lifts require fewer.
+
+If your store's traffic makes reaching these numbers in a reasonable timeframe impossible, consider whether A/B testing at the CVR level is the right tool — or focus on higher-traffic pages.
+
+---
 
 ## Novelty effect
 
-A novelty effect warning appears when a variant's CVR was significantly higher in the first 48 hours than in subsequent days (≥40% drop-off). This usually means returning customers are inflating early results because the change feels novel. Wait for the effect to stabilise before concluding.
+The novelty effect warning appears when a treatment variant's CVR in the first 48 hours was 40% or more higher than its CVR in the following days.
+
+**Example:** Variant B has 4.0% CVR in the first two days, then 2.5% CVR in the following week. The drop is (4.0 - 2.5) / 4.0 = 37.5% — below the 40% threshold, so no warning. But if it were 5.0% early and 2.5% late, that is a 50% drop and a warning fires.
+
+**What causes it:** Returning customers who have seen the store many times notice the new variant and are more likely to engage or buy — not because the change is better, but because it is new and interesting. This effect typically fades after a few days as novelty wears off.
+
+**What to do:** Keep running. Check back after the novelty effect has dissipated (usually 1-2 additional weeks of data). If significance holds after the early spike, the result is more credible.
