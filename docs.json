@@ -98,8 +98,8 @@
     ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/arktic-icon.png",
+    "dark": "/logo/arktic-icon.png"
   },
   "navbar": {
     "links": [],
