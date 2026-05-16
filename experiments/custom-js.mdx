@@ -1,0 +1,317 @@
+---
+title: Custom JS tests
+description: Use Arktic as the experimentation engine and apply any change you want with your own JavaScript.
+---
+
+## What is a Custom JS test?
+
+A Custom JS test lets you use Arktic for traffic allocation, visitor assignment, and results tracking while writing your own JavaScript to apply the actual change. There is no limit on what you can test — if JavaScript can do it on your storefront, you can A/B test it with Arktic.
+
+This is for developers. If you are not comfortable writing JavaScript, use one of the other experiment types instead — Template, Section, Theme, or URL Redirect tests handle most use cases without any code.
+
+---
+
+## When to use it
+
+Use a Custom JS test when:
+
+- You want to test something no built-in type covers (sort order, image swap, third-party widget, custom DOM change)
+- You want to run the change conditionally based on custom logic (e.g. only fire after the visitor scrolls 50%)
+- You want to integrate Arktic tracking into an existing A/B testing setup
+- You want to test behaviour that is triggered by a user action rather than on page load
+
+---
+
+## How it works
+
+When you create a Custom JS test, Arktic:
+
+1. Assigns visitors to variants exactly like any other experiment (deterministic FNV hash, persisted cookie)
+2. Adds CSS classes to `<html>` for each assigned variant
+3. Exposes the assignment via `window.Arktic` so your code can read it
+4. Tracks PAGE_VIEW, ADD_TO_CART, and INITIATE_CHECKOUT events automatically
+5. Attributes orders via cart attributes (same as all other experiment types)
+
+Your JavaScript reads the assignment and applies whatever change you want. Arktic handles everything else.
+
+---
+
+## Setup
+
+### Step 1: Create the experiment
+
+1. Go to **Experiments → New experiment**
+2. Select **Custom / JS** as the experiment type
+3. Name your variants (e.g. "Control" and "Variant B" — or more descriptive names like "Sort: Best Selling")
+4. Set traffic allocation and segment as needed
+5. Click **Create experiment**
+
+### Step 2: Copy your IDs
+
+On the experiment **Overview** tab, copy:
+- **Experiment ID** — a string like `clxyz123abc...`
+- **Variant IDs** — one for each variant, found on the Variants tab
+
+You need these IDs in your JavaScript.
+
+### Step 3: Write your JavaScript
+
+Add your code to your Shopify theme. The best place is a custom JavaScript file loaded via the theme, or directly in `theme.liquid` before `</body>`.
+
+The Arktic JS API is available as `window.Arktic` on every storefront page once the app embed is active.
+
+---
+
+## The `window.Arktic` API
+
+### `Arktic.getVariant(experimentId)`
+
+Returns the variant **name** the current visitor is assigned to, or `null` if they are not in the experiment.
+
+```js
+var variant = window.Arktic.getVariant('your-experiment-id');
+// Returns: 'Control', 'Variant B', 'Sort: Best Selling', etc.
+// Returns: null if visitor is not in the experiment
+```
+
+### `Arktic.getVariantId(experimentId)`
+
+Returns the raw variant **ID** or `null`.
+
+```js
+var variantId = window.Arktic.getVariantId('your-experiment-id');
+// Returns: 'clvariant123...' or null
+```
+
+### `Arktic.isControl(experimentId)`
+
+Returns `true` if the visitor is in the control variant, or is not in the experiment at all.
+
+```js
+if (window.Arktic.isControl('your-experiment-id')) {
+  // Control experience — do nothing, or apply control logic
+} else {
+  // Variant experience
+}
+```
+
+### `Arktic.onAssigned(experimentId, callback)`
+
+Calls your callback immediately if the visitor is assigned to this experiment. Does nothing if the visitor is not in the experiment (excluded by traffic allocation, segment, or the experiment is not running).
+
+```js
+window.Arktic.onAssigned('your-experiment-id', function(variantName, variantId) {
+  console.log('Visitor is in:', variantName);
+  // Apply your change here
+});
+```
+
+### `Arktic.getAssignments()`
+
+Returns all current experiment assignments as a plain object.
+
+```js
+var assignments = window.Arktic.getAssignments();
+// Returns: { 'exp-id-1': 'variant-id-a', 'exp-id-2': 'variant-id-b' }
+```
+
+---
+
+## CSS classes
+
+In addition to the JS API, Arktic adds CSS classes to the `<html>` element for every experiment the visitor is assigned to:
+
+```
+spt-e-{last8ofExpId}-v-{last8ofVarId}
+```
+
+Example: if your experiment ID ends in `abc12345` and your variant ID ends in `xyz98765`:
+
+```css
+html.spt-e-abc12345-v-xyz98765 .my-element {
+  /* Variant-specific CSS */
+}
+```
+
+This lets you apply CSS-only changes without any JavaScript at all. Useful for simple style changes, colour swaps, or showing/hiding elements.
+
+---
+
+## Examples
+
+### Example 1: Collection sort order
+
+Test `best-selling` vs the default sort order on a collection page.
+
+```js
+(function() {
+  // Only run on collection pages
+  if (location.pathname.indexOf('/collections/') !== 0) return;
+
+  window.Arktic.onAssigned('your-experiment-id', function(variantName) {
+    if (variantName === 'Control') return; // Default sort — do nothing
+
+    // Apply the test sort order before the page is shown
+    var params = new URLSearchParams(location.search);
+    if (params.get('sort_by') !== 'best-selling') {
+      params.set('sort_by', 'best-selling');
+      window.location.replace(location.pathname + '?' + params.toString());
+    }
+  });
+})();
+```
+
+### Example 2: Swap the product hero image
+
+Test a lifestyle image vs the default product image on a specific product page.
+
+```js
+(function() {
+  if (location.pathname.indexOf('/products/your-product') !== 0) return;
+
+  window.Arktic.onAssigned('your-experiment-id', function(variantName) {
+    if (variantName === 'Control') return;
+
+    // Wait for the main image element to be in the DOM
+    document.addEventListener('DOMContentLoaded', function() {
+      var mainImg = document.querySelector('.product__media img, .product-featured-media img');
+      if (mainImg) {
+        mainImg.src = 'https://cdn.shopify.com/s/files/1/0000/0001/files/lifestyle.jpg';
+        mainImg.srcset = '';
+      }
+    });
+  });
+})();
+```
+
+### Example 3: Show a sticky announcement bar for variant visitors
+
+Test a promotional banner that appears at the top of the page for variant visitors.
+
+```js
+(function() {
+  window.Arktic.onAssigned('your-experiment-id', function(variantName) {
+    if (variantName === 'Control') return;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var bar = document.createElement('div');
+      bar.style.cssText = 'background:#111;color:#fff;text-align:center;padding:0.625rem;font-size:0.875rem;position:sticky;top:0;z-index:9999;';
+      bar.textContent = 'Free shipping on all orders this week. No code needed.';
+      document.body.insertBefore(bar, document.body.firstChild);
+    });
+  });
+})();
+```
+
+### Example 4: Trigger after scroll (manual activation)
+
+Only apply the variant after the visitor has scrolled 50% down the page.
+
+```js
+(function() {
+  var variantName = window.Arktic.getVariant('your-experiment-id');
+  if (!variantName || variantName === 'Control') return;
+
+  var applied = false;
+  window.addEventListener('scroll', function() {
+    if (applied) return;
+    var scrollPct = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+    if (scrollPct >= 50) {
+      applied = true;
+      // Apply your change here
+      document.querySelector('.sticky-cta').style.display = 'block';
+    }
+  });
+})();
+```
+
+### Example 5: CSS-only change using HTML classes
+
+No JavaScript needed for simple style changes. Use the auto-applied CSS class:
+
+```css
+/* In your theme's CSS */
+html.spt-e-abc12345-v-xyz98765 .product__title {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+html.spt-e-abc12345-v-xyz98765 .btn--add-to-cart {
+  background-color: #e63333;
+  border-color: #e63333;
+}
+```
+
+---
+
+## Timing
+
+`window.Arktic` is set up synchronously during the Arktic embed script execution, which runs before `DOMContentLoaded`. This means:
+
+- `Arktic.getVariant()` and `Arktic.isControl()` are available immediately — you can call them synchronously in a `<script>` tag
+- `Arktic.onAssigned()` also fires synchronously — the callback runs immediately if the visitor is assigned
+- If you need to manipulate the DOM, wrap your logic in a `DOMContentLoaded` listener or call it from the bottom of `<body>`
+
+```js
+// Safe — called synchronously before DOM is ready
+var variant = window.Arktic.getVariant('exp-id');
+
+// DOM manipulation — wait for DOMContentLoaded
+window.Arktic.onAssigned('exp-id', function(name) {
+  if (name === 'Control') return;
+  document.addEventListener('DOMContentLoaded', function() {
+    // Safe to touch DOM here
+  });
+});
+```
+
+---
+
+## Where to add your code
+
+**Option 1: Theme's custom JavaScript file**
+
+Most themes have a `assets/custom.js` or similar file you can edit in **Online Store → Themes → Edit code**. Add your experiment code there.
+
+**Option 2: Directly in `theme.liquid`**
+
+Add a `<script>` block before `</body>` in `layout/theme.liquid`. Wrap it in a check so it only runs when Arktic is loaded:
+
+```liquid
+<script>
+  // Wait for Arktic to be available
+  (function waitForArktic() {
+    if (window.Arktic) {
+      // Your experiment code here
+      window.Arktic.onAssigned('your-experiment-id', function(variant) {
+        // ...
+      });
+    } else {
+      setTimeout(waitForArktic, 50);
+    }
+  })();
+</script>
+```
+
+**Option 3: Google Tag Manager**
+
+Paste your experiment code as a Custom HTML tag triggered on All Pages. Set the trigger to fire after the Arktic script loads (use a DOM Ready trigger or a Custom Event trigger).
+
+---
+
+## Viewing results
+
+Results work exactly the same as any other experiment. Go to the **Results** tab on your experiment to see sessions, CVR, revenue per visitor, and statistical significance.
+
+Events (page views, add to cart, checkout) are tracked automatically for all visitors assigned to the experiment — no extra tracking code needed.
+
+---
+
+## Checklist before launching
+
+- [ ] App embed is enabled on your live theme (see [Enable the app embed](/setup/app-embed))
+- [ ] `window.Arktic` is accessible in the browser console (`window.Arktic.getVariant` should be a function)
+- [ ] Your code is deployed on the storefront
+- [ ] You have tested the control experience (no unintended changes)
+- [ ] You have tested the variant experience (change applies correctly)
+- [ ] The experiment status is **Running**

@@ -56,7 +56,8 @@
           "experiments/creating",
           "experiments/types",
           "experiments/traffic-allocation",
-          "experiments/segments"
+          "experiments/segments",
+          "experiments/custom-js"
         ]
       },
       {
