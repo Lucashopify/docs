@@ -1,13 +1,13 @@
 ---
 title: Statistical significance
-description: How Split Tester determines whether results are real, including p-values, confidence, SRM, and peeking bias.
+description: How Arktic determines whether results are real, including p-values, confidence, SRM, and peeking bias.
 ---
 
 ## Why significance matters
 
 When you run an A/B test, both variants will show different conversion rates even if the change has no real effect — just by chance. The more you look at results (especially early), the more likely you are to observe a difference that looks meaningful but is actually random noise.
 
-Statistical significance is a measure of how likely the observed difference is due to chance. Split Tester uses a **two-proportion z-test** to compute a p-value for each treatment variant compared to control.
+Statistical significance is a measure of how likely the observed difference is due to chance. Arktic uses a **two-proportion z-test** to compute a p-value for each treatment variant compared to control.
 
 ---
 
@@ -36,7 +36,7 @@ It also does not tell you anything about the size of the effect. A tiny effect c
 
 ## The z-test formula
 
-Split Tester uses a two-proportion z-test:
+Arktic uses a two-proportion z-test:
 
 ```
 p1 = control conversion rate = controlOrders / controlSessions
@@ -54,7 +54,7 @@ The z-score is then converted to a two-tailed p-value using the standard normal 
 
 ## Confidence level
 
-Split Tester uses **95% confidence** (α = 0.05) as the default threshold. This means:
+Arktic uses **95% confidence** (α = 0.05) as the default threshold. This means:
 
 - If you run 100 experiments on changes that have no real effect, you expect about 5 to show false positives (p < 0.05)
 - A false positive rate of 5% is the standard for e-commerce A/B testing
@@ -65,7 +65,7 @@ A higher confidence threshold (99%) would reduce false positives but requires ro
 
 ## Statistical power
 
-Power is the probability of detecting a real effect when one exists. Split Tester targets **80% power** in its sample size guidance, which is the industry standard.
+Power is the probability of detecting a real effect when one exists. Arktic targets **80% power** in its sample size guidance, which is the industry standard.
 
 At 80% power and 95% confidence, if there is a real 10% relative lift:
 - 80% of the time your test will detect it (p < 0.05)
@@ -85,9 +85,9 @@ SRM occurs when the actual distribution of visitors between variants does not ma
 
 When one variant receives disproportionately more traffic than expected, it suggests something is systematically wrong with the assignment process. Results from an SRM experiment cannot be trusted because the comparison groups are not equivalent.
 
-### How Split Tester detects SRM
+### How Arktic detects SRM
 
-Split Tester runs a chi-squared test on the visitor counts after each variant reaches 100 visitors:
+Arktic runs a chi-squared test on the visitor counts after each variant reaches 100 visitors:
 
 ```
 chi2 = sum over variants: (observed - expected)^2 / expected
@@ -123,9 +123,9 @@ P-values fluctuate over the life of an experiment. Early on, with small sample s
 
 Research shows that "continuous monitoring" (checking and stopping early whenever significant) can push the false positive rate above 30% — meaning nearly a third of your "winning" experiments are actually noise.
 
-### Split Tester's minimum runtime
+### Arktic's minimum runtime
 
-Split Tester shows a minimum runtime warning for experiments shorter than 7 days. The conclusion banner only becomes active after:
+Arktic shows a minimum runtime warning for experiments shorter than 7 days. The conclusion banner only becomes active after:
 - At least 7 days have elapsed (one full day-of-week cycle)
 - At least 100 sessions per variant
 

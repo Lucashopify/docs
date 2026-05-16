@@ -15,11 +15,11 @@ The solution is to use a real duplicate product with the test price set directly
 
 When you create a **Price test (auto-setup)** experiment:
 
-1. Split Tester calls the Shopify Admin API to create a duplicate of your product
+1. Arktic calls the Shopify Admin API to create a duplicate of your product
 2. The price adjustment is applied to every variant (size, color, etc.) on the duplicate
 3. The duplicate is set to Active and named `[SPT] Your Product Name` so it is clearly identifiable
 4. A URL Redirect experiment is automatically configured: control visitors see the original product, variant visitors are redirected to the duplicate
-5. When you complete or archive the experiment, Split Tester deletes the duplicate product automatically
+5. When you complete or archive the experiment, Arktic deletes the duplicate product automatically
 
 Visitors never know they are on a duplicate page. The duplicate has the same images, description, and options — just a different price.
 
@@ -38,7 +38,7 @@ Visitors never know they are on a duplicate page. The duplicate has the same ima
 5. Set your traffic split (usually 50/50)
 6. Click **Create experiment**
 
-Split Tester creates the duplicate and configures the redirect experiment in the background. This takes a few seconds.
+Arktic creates the duplicate and configures the redirect experiment in the background. This takes a few seconds.
 
 ### Step 2: Start the experiment
 
@@ -70,7 +70,7 @@ If you prefer full control, you can set up a non-Plus price test manually withou
 3. **Set the test price** on the duplicate by editing each variant's price
 4. **Hide the duplicate** from collections and search (Sales Channels settings → set Online Store to unavailable in search, remove from all collections)
 5. Copy the duplicate product URL (e.g. `/products/your-product-name-price-test`)
-6. In Split Tester, create a **URL Redirect** experiment
+6. In Arktic, create a **URL Redirect** experiment
 7. Set the source URL to the original product path (e.g. `/products/your-product`)
 8. Set the destination URL to the duplicate (e.g. `/products/your-product-name-price-test`)
 9. Set your traffic split and start
@@ -105,7 +105,7 @@ When the experiment ends, manually delete the duplicate product.
 
 ### Key difference
 
-With the non-Plus method, control and variant visitors are on different product pages. Any visitor who lands directly on the original product URL (from a Google Shopping ad, a direct link, a bookmark) will always see the original price — the redirect only fires when Split Tester's script is loaded and running on the page.
+With the non-Plus method, control and variant visitors are on different product pages. Any visitor who lands directly on the original product URL (from a Google Shopping ad, a direct link, a bookmark) will always see the original price — the redirect only fires when Arktic's script is loaded and running on the page.
 
 This is why you should not use this method for traffic that comes in via direct product links (ads, email campaigns, influencer links). It works best for organic traffic arriving at your product page through your store navigation.
 
@@ -117,7 +117,7 @@ This is why you should not use this method for traffic that comes in via direct 
 If a visitor lands directly on the original product URL from an external link (ad, email, social), the redirect fires and works correctly. However, if the visitor lands on the duplicate product URL directly (e.g. if they bookmarked it or you linked to it in an ad), they will always see the test price — even if they should be in the control group.
 
 **Different product URLs**
-Control and variant visitors are on different URLs. This can affect SEO if the duplicate product is not properly hidden. Split Tester sets the duplicate to Active but does not add it to collections or search. Make sure it is not accidentally surfaced through other means (sitemaps, related products, etc.).
+Control and variant visitors are on different URLs. This can affect SEO if the duplicate product is not properly hidden. Arktic sets the duplicate to Active but does not add it to collections or search. Make sure it is not accidentally surfaced through other means (sitemaps, related products, etc.).
 
 **Two product pages to maintain**
 While the experiment is running, both the original and duplicate exist in your Shopify Admin. If you need to update the product (description, images, inventory), you will need to update both.

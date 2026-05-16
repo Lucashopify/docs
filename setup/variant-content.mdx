@@ -5,7 +5,7 @@ description: How to place and configure the Variant Content app block for Sectio
 
 ## What is the Variant Content block?
 
-The Variant Content block is a **Shopify Theme App Extension block** that you place in your Theme Editor. It acts as a placeholder container that Split Tester injects HTML into on page load.
+The Variant Content block is a **Shopify Theme App Extension block** that you place in your Theme Editor. It acts as a placeholder container that Arktic injects HTML into on page load.
 
 This block is required for **Section content** and **Page content** experiment types. It is not needed for Theme, URL Redirect, Price, or Template experiments.
 
@@ -16,7 +16,7 @@ This block is required for **Section content** and **Page content** experiment t
 When a visitor loads a page:
 
 1. The page renders with the Variant Content block as a hidden `div`
-2. The Split Tester script reads the visitor's variant assignment for the configured experiment ID
+2. The Arktic script reads the visitor's variant assignment for the configured experiment ID
 3. For control visitors — the block stays hidden (the section's default content shows)
 4. For variant visitors — the script injects the configured HTML into the block container and makes it visible
 5. This happens before the page is revealed to the visitor — no flash of wrong content
@@ -33,7 +33,7 @@ The block renders in the DOM as:
 
 ### Step 1: Find your experiment ID
 
-Go to your experiment in Split Tester and open the **Overview** tab. Copy the **Experiment ID** — it is a long alphanumeric string starting with `cl`.
+Go to your experiment in Arktic and open the **Overview** tab. Copy the **Experiment ID** — it is a long alphanumeric string starting with `cl`.
 
 ### Step 2: Open the Theme Editor
 
@@ -70,7 +70,7 @@ Click **Save** in the Theme Editor.
 
 ## Configuring variant HTML
 
-After placing the block, go back to Split Tester and open your experiment's **Variants** tab. Click **Configure** on Variant B.
+After placing the block, go back to Arktic and open your experiment's **Variants** tab. Click **Configure** on Variant B.
 
 Paste the HTML you want to show variant visitors. This can be:
 

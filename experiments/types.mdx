@@ -3,7 +3,7 @@ title: Experiment types
 description: Every experiment type explained — what it tests, how it works technically, and when to use it.
 ---
 
-Split Tester supports five experiment types. Choosing the right one depends on what you want to test and what your store supports.
+Arktic supports five experiment types. Choosing the right one depends on what you want to test and what your store supports.
 
 | Type | Best for | Shopify plan |
 |---|---|---|
@@ -30,7 +30,7 @@ The redirect only fires if `?preview_theme_id` is not already in the URL, so sub
 
 1. In **Online Store → Themes**, click the **...** menu on your live theme and select **Duplicate**
 2. Make your design changes to the duplicate theme
-3. In Split Tester, create a new **Theme** experiment
+3. In Arktic, create a new **Theme** experiment
 4. In the Variant B configuration, select the duplicate theme from the dropdown
 5. Start the experiment
 
@@ -67,7 +67,7 @@ This prevents inflating results with unrelated page views.
 ### Setup
 
 1. Build your alternate page (or identify the destination URL you want to test)
-2. Create a **URL Redirect** experiment in Split Tester
+2. Create a **URL Redirect** experiment in Arktic
 3. Enter the **source URL** (e.g. `/pages/landing-page`) — this is where the redirect fires from
 4. In Variant B configuration, enter the **destination URL** (e.g. `/pages/landing-page-v2`)
 5. Set your traffic split and start the experiment
@@ -82,13 +82,13 @@ This prevents inflating results with unrelated page views.
 
 ## Price test (auto-setup, all plans)
 
-Tests a different price for a product on any Shopify plan. Split Tester duplicates the product automatically, sets the test price on the duplicate, and runs a URL Redirect experiment between the two product pages.
+Tests a different price for a product on any Shopify plan. Arktic duplicates the product automatically, sets the test price on the duplicate, and runs a URL Redirect experiment between the two product pages.
 
 ### How it works
 
 When you create a Price (auto-setup) experiment:
 
-1. Split Tester calls the Shopify Admin API to duplicate your product
+1. Arktic calls the Shopify Admin API to duplicate your product
 2. The price adjustment is applied to all variants on the duplicate
 3. The duplicate is set to Active so it is reachable via URL
 4. A URL Redirect experiment is created: control visitors see the original product, variant visitors are redirected to the duplicate
@@ -125,7 +125,7 @@ Tests a different price at checkout using Shopify's Cart Transform API. The pric
 
 1. The JS detects which product page the visitor is on and updates price elements in the DOM to show the test price
 2. When the visitor adds to cart, a hidden cart attribute (`spt_asgn`) is written to their cart recording their variant assignment
-3. When the visitor checks out, Split Tester's Cart Transform function reads the cart attribute and applies a price adjustment at the cart level
+3. When the visitor checks out, Arktic's Cart Transform function reads the cart attribute and applies a price adjustment at the cart level
 4. The customer sees the test price in their cart and pays it at checkout
 
 This is a true price test — the customer actually pays the test price, not just sees it.

@@ -1,11 +1,11 @@
 ---
 title: Enable the app embed
-description: How to turn on the Split Tester script in your Shopify theme — and how to verify it is working.
+description: How to turn on the Arktic script in your Shopify theme — and how to verify it is working.
 ---
 
 ## What the app embed does
 
-The app embed is a JavaScript file that Split Tester adds to every page of your storefront through Shopify's Theme App Extension system. It is responsible for:
+The app embed is a JavaScript file that Arktic adds to every page of your storefront through Shopify's Theme App Extension system. It is responsible for:
 
 - Generating and persisting visitor IDs (`spt_vid` cookie)
 - Reading experiment config and bucketing visitors into variants
@@ -22,7 +22,7 @@ The app embed is a JavaScript file that Split Tester adds to every page of your 
 1. In your Shopify Admin, go to **Online Store → Themes**
 2. On your live theme, click **Customize**
 3. In the Theme Editor, click the **App embeds** icon in the left sidebar (the puzzle piece icon)
-4. Find **Split Tester** in the list
+4. Find **Arktic** in the list
 5. Toggle it **on**
 6. Click **Save** in the top-right corner
 
@@ -38,7 +38,7 @@ The embed is now active on all pages of your live theme.
 
 ### Method 1: Check the Get Started page
 
-After enabling the embed, visit any page on your storefront. Then return to the Split Tester dashboard and open **Get Started**. Step 1 shows a green checkmark once the dashboard receives its first event from your store — this usually takes less than 30 seconds after your first page visit.
+After enabling the embed, visit any page on your storefront. Then return to the Arktic dashboard and open **Get Started**. Step 1 shows a green checkmark once the dashboard receives its first event from your store — this usually takes less than 30 seconds after your first page visit.
 
 ### Method 2: Check the browser console
 
@@ -68,7 +68,7 @@ In your browser developer tools, go to **Network** and filter by `events`. After
 
 The embed script is designed to be as non-blocking as possible:
 
-- **Served from Shopify's CDN** — the script is part of a Shopify Theme App Extension, so it is hosted and delivered by Shopify's own infrastructure, not Split Tester's servers
+- **Served from Shopify's CDN** — the script is part of a Shopify Theme App Extension, so it is hosted and delivered by Shopify's own infrastructure, not Arktic's servers
 - **Inline config** — experiment configuration is injected as a JavaScript variable during Liquid rendering, so no API call is needed to fetch config on the client
 - **Synchronous bucketing** — variant assignment happens synchronously before `DOMContentLoaded`, preventing any flash of the wrong variant
 - **Async event sending** — all analytics events are sent via `navigator.sendBeacon`, which is non-blocking and does not delay page interactions
@@ -95,7 +95,7 @@ The embed will only run on the theme where it is enabled. Make sure to enable it
 
 When you use Shopify's theme preview feature (`?preview_theme_id=...`), the theme app extension from the embed will not run unless the embed is also enabled on the preview theme. This is expected behaviour — Shopify's theme preview loads the target theme's own app embeds, not the live theme's.
 
-For Split Tester's own theme tests, the embed handles this internally by running the variant assignment before the theme preview redirect fires, then preserving the assignment in the `spt_asgn` cookie.
+For Arktic's own theme tests, the embed handles this internally by running the variant assignment before the theme preview redirect fires, then preserving the assignment in the `spt_asgn` cookie.
 
 ---
 
@@ -111,7 +111,7 @@ For Split Tester's own theme tests, the embed handles this internally by running
 **The embed loads but no events appear in the Get Started page**
 
 - Check the Network tab for a POST to `/api/events`. If it is failing with a 4xx or 5xx error, contact support.
-- Check the browser console for JavaScript errors from Split Tester scripts
+- Check the browser console for JavaScript errors from Arktic scripts
 
 **The embed was working but stopped**
 

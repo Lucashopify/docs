@@ -7,7 +7,7 @@ description: A detailed breakdown of every metric in the results table and how e
 
 **Definition:** The number of PAGE_VIEW events recorded for this variant.
 
-**What it is not:** Sessions in Split Tester are not the same as Shopify Analytics sessions or Google Analytics sessions. A Split Tester session is any page view by a visitor who is assigned to this variant. A single visitor browsing 5 pages generates 5 sessions.
+**What it is not:** Sessions in Arktic are not the same as Shopify Analytics sessions or Google Analytics sessions. A Arktic session is any page view by a visitor who is assigned to this variant. A single visitor browsing 5 pages generates 5 sessions.
 
 **Why it matters:** Sessions is your sample size. More sessions = more reliable results. Aim for at least 100 per variant before drawing any conclusions.
 
@@ -19,7 +19,7 @@ description: A detailed breakdown of every metric in the results table and how e
 
 **Definition:** Orders attributed to this variant via cart attributes (`spt_vid` and `spt_asgn`).
 
-**How attribution works:** When a visitor's order completes, Shopify fires a webhook. Split Tester reads the visitor's cart attributes from the order's `note_attributes` and matches them to the correct experiment and variant. If the cart attributes are missing (e.g. the visitor cleared cookies between adding to cart and checking out), the order is not attributed.
+**How attribution works:** When a visitor's order completes, Shopify fires a webhook. Arktic reads the visitor's cart attributes from the order's `note_attributes` and matches them to the correct experiment and variant. If the cart attributes are missing (e.g. the visitor cleared cookies between adding to cart and checking out), the order is not attributed.
 
 **Attribution window:** There is no fixed attribution window. An order is attributed to the variant the visitor was in at the time they were last seen on the store (their most recent cart attribute write). Visitors who abandon cart for weeks and return to complete the order may still be attributed correctly if their assignment cookie is still set.
 
@@ -135,7 +135,7 @@ lift = (variantCVR - controlCVR) / controlCVR
 
 **Definition:** The probability of observing a CVR difference this large (or larger) if there were actually no real effect.
 
-**Threshold:** Split Tester uses p < 0.05 (95% confidence) as the significance threshold.
+**Threshold:** Arktic uses p < 0.05 (95% confidence) as the significance threshold.
 
 | P-value | Interpretation |
 |---|---|
@@ -145,7 +145,7 @@ lift = (variantCVR - controlCVR) / controlCVR
 | 0.10 | 10% chance — not significant, keep running |
 | 0.50 | 50% chance — no signal at all |
 
-**How it is calculated:** Split Tester uses a **two-proportion z-test** comparing the conversion rates of each treatment variant against the control.
+**How it is calculated:** Arktic uses a **two-proportion z-test** comparing the conversion rates of each treatment variant against the control.
 
 See [Statistical significance](/results/significance) for a full explanation.
 

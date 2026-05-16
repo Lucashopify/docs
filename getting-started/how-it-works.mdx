@@ -5,7 +5,7 @@ description: A technical walkthrough of visitor bucketing, assignment persistenc
 
 ## Overview
 
-Split Tester works entirely through a JavaScript embed on the storefront and a server-side rollup pipeline. Here is the full data flow from visitor arrival to a result in the dashboard.
+Arktic works entirely through a JavaScript embed on the storefront and a server-side rollup pipeline. Here is the full data flow from visitor arrival to a result in the dashboard.
 
 ```
 Visitor arrives
@@ -192,7 +192,7 @@ The JS writes two cart attributes on every page load:
 }
 ```
 
-These attributes travel with the cart through checkout and appear on the Shopify order as `note_attributes`. When the `orders/paid` webhook fires, Split Tester reads these values and creates an attribution record linking the order to the correct experiment and variant.
+These attributes travel with the cart through checkout and appear on the Shopify order as `note_attributes`. When the `orders/paid` webhook fires, Arktic reads these values and creates an attribution record linking the order to the correct experiment and variant.
 
 **Buy It Now buttons** are handled separately. Since BIN bypasses the cart, the JS injects hidden `<input>` fields into product forms with `name="properties[spt_asgn]"` — these become line item properties on the order and are read during attribution.
 
@@ -200,13 +200,13 @@ These attributes travel with the cart through checkout and appear on the Shopify
 
 ## Consent handling
 
-Split Tester respects Shopify's Customer Privacy API. Before sending any analytics events (PAGE_VIEW, ADD_TO_CART, etc.), the embed checks:
+Arktic respects Shopify's Customer Privacy API. Before sending any analytics events (PAGE_VIEW, ADD_TO_CART, etc.), the embed checks:
 
 ```js
 Shopify.customerPrivacy.analyticsProcessingAllowed()
 ```
 
-If consent is not granted, event sending is skipped. Visitor ID assignment and variant bucketing still happen (so the visitor sees a consistent experience), but no data is sent to Split Tester's servers.
+If consent is not granted, event sending is skipped. Visitor ID assignment and variant bucketing still happen (so the visitor sees a consistent experience), but no data is sent to Arktic's servers.
 
 ---
 

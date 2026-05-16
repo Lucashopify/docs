@@ -5,19 +5,19 @@ description: Which Shopify themes work with price experiments out of the box, an
 
 ## Why theme setup is needed for price tests
 
-For price experiments to work correctly, Split Tester's script needs to know which HTML elements on your page display the product price and which elements display the cart line item price. The script updates these elements to show the test price for visitors assigned to the variant.
+For price experiments to work correctly, Arktic's script needs to know which HTML elements on your page display the product price and which elements display the cart line item price. The script updates these elements to show the test price for visitors assigned to the variant.
 
 This is done by looking for specific **data attributes** on the relevant elements:
 
 - `data-spt-price` — the element showing the product price on the PDP
 - `data-spt-cart-price` — the element showing the line item price in the cart (drawer or page)
 
-For **supported themes**, these attributes are automatically added by Split Tester's theme app extension — no manual setup required.
+For **supported themes**, these attributes are automatically added by Arktic's theme app extension — no manual setup required.
 
 For **other themes**, you or a developer needs to add the attributes once. It takes 5-10 minutes and only needs to be done once.
 
 <Note>
-  These attributes are only used by Split Tester's script and have no effect on your theme's appearance or behaviour. They are safe to add to any theme.
+  These attributes are only used by Arktic's script and have no effect on your theme's appearance or behaviour. They are safe to add to any theme.
 </Note>
 
 ---

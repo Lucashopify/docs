@@ -1,8 +1,8 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Split Tester",
-  "description": "A/B testing for Shopify. Run experiments on themes, prices, content, and more.",
+  "name": "Arktic",
+  "description": "A/B split testing for Shopify. Run experiments on themes, prices, content, and more.",
   "colors": {
     "primary": "#5b5bd6",
     "light": "#7c7ce8",

@@ -9,16 +9,16 @@ description: How to run a real server-side price A/B test using Shopify's Cart T
 
 ## How it works
 
-Shopify Plus price testing uses the **Cart Transform API** to modify the actual checkout price server-side. When a visitor assigned to the test variant adds a product to their cart, Split Tester's Cart Transform function intercepts the cart before checkout and adjusts the price. The customer sees the test price in their cart and pays it at checkout — no discount codes, no workarounds.
+Shopify Plus price testing uses the **Cart Transform API** to modify the actual checkout price server-side. When a visitor assigned to the test variant adds a product to their cart, Arktic's Cart Transform function intercepts the cart before checkout and adjusts the price. The customer sees the test price in their cart and pays it at checkout — no discount codes, no workarounds.
 
 The full flow:
 
 1. Visitor arrives on the product page
-2. Split Tester JS detects they are assigned to the test variant
+2. Arktic JS detects they are assigned to the test variant
 3. Price elements in the DOM are updated to show the test price
 4. Visitor adds to cart — a hidden cart attribute `spt_asgn` is written to the cart recording their assignment
 5. Visitor proceeds to checkout
-6. Shopify calls Split Tester's Cart Transform function
+6. Shopify calls Arktic's Cart Transform function
 7. Cart Transform reads the `spt_asgn` attribute and applies a fixed price override to the correct line items
 8. Checkout completes at the test price
 
@@ -85,7 +85,7 @@ The test price at checkout is applied by Cart Transform, which runs server-side.
 
 ## How the displayed price is updated
 
-The Split Tester script looks for elements with the `data-spt-price` attribute on the product page and `data-spt-cart-price` in the cart. When a visitor is assigned to a price test variant, the script updates the text content of these elements to show the test price.
+The Arktic script looks for elements with the `data-spt-price` attribute on the product page and `data-spt-cart-price` in the cart. When a visitor is assigned to a price test variant, the script updates the text content of these elements to show the test price.
 
 For supported themes (Dawn, Sense, Craft, and others), these attributes are added automatically by the theme app extension. For other themes, you or a developer needs to add them. See [Theme compatibility](/setup/theme-compatibility).
 

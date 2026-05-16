@@ -1,15 +1,15 @@
 ---
 title: FAQ
-description: Answers to the most common questions about Split Tester.
+description: Answers to the most common questions about Arktic.
 ---
 
 ## General
 
-### Does Split Tester work with all Shopify themes?
+### Does Arktic work with all Shopify themes?
 
 The tracking script and most experiment types (Theme, URL Redirect, Template, Section content) work with all Shopify themes. Price experiments require adding two data attributes to your theme's Liquid files — a one-time setup that takes about 10 minutes. See [Theme compatibility](/setup/theme-compatibility) for supported themes and setup instructions.
 
-### Can I run Split Tester on a Shopify store that is not on Shopify Plus?
+### Can I run Arktic on a Shopify store that is not on Shopify Plus?
 
 Yes. All experiment types except **Price test (Plus)** work on any Shopify plan. The **Price test (auto-setup)** option is specifically designed for non-Plus stores and is available on all plans.
 
@@ -22,11 +22,11 @@ There is no hard limit. Practically, keep in mind:
 
 ### Will experiments affect my Shopify Analytics or Google Analytics data?
 
-Split Tester does not modify Shopify Analytics or GA4 data. Shopify Analytics and GA4 see all sessions normally — they do not know a visitor is in a specific experiment variant unless you explicitly pass that data.
+Arktic does not modify Shopify Analytics or GA4 data. Shopify Analytics and GA4 see all sessions normally — they do not know a visitor is in a specific experiment variant unless you explicitly pass that data.
 
-If you have Google Tag Manager or gtag on your store, Split Tester integrates with GA4 via `gtag('event', 'experiment_impression', {...})` for each new assignment. This is opt-in and only fires when gtag is available on the page.
+If you have Google Tag Manager or gtag on your store, Arktic integrates with GA4 via `gtag('event', 'experiment_impression', {...})` for each new assignment. This is opt-in and only fires when gtag is available on the page.
 
-### Does Split Tester work with Shopify Markets?
+### Does Arktic work with Shopify Markets?
 
 For most experiment types, yes. For **Plus price tests**, multi-currency stores using Shopify Markets are not supported. See [Price testing limitations](/price-testing/limitations) for details.
 
@@ -66,10 +66,10 @@ If a visitor lands on a page before the app embed has loaded (e.g. a cached page
 
 ### Why do my results not match Shopify Analytics?
 
-Split Tester and Shopify Analytics count sessions and conversions differently:
+Arktic and Shopify Analytics count sessions and conversions differently:
 
 - **Shopify Analytics sessions** are based on Shopify's own visit definition (30-minute inactivity timeout, referrer-based session splitting)
-- **Split Tester sessions** are per page view events, filtered to relevant pages per experiment type
+- **Arktic sessions** are per page view events, filtered to relevant pages per experiment type
 
 The numbers will not match exactly, and that is fine. What matters for your A/B test is that the counting is consistent across variants — the comparison is valid even if the absolute numbers differ from Shopify's.
 
@@ -113,21 +113,21 @@ Yes. The price adjustment applies to every variant. For Plus price tests, Cart T
 
 ## Technical
 
-### Does Split Tester work with cookie consent banners / GDPR?
+### Does Arktic work with cookie consent banners / GDPR?
 
-Yes. Split Tester checks `Shopify.customerPrivacy.analyticsProcessingAllowed()` before sending any analytics events. If the visitor has not given consent, events are not sent. Visitor ID generation and variant bucketing still happen (so the visitor sees a consistent experience), but no data is recorded.
+Yes. Arktic checks `Shopify.customerPrivacy.analyticsProcessingAllowed()` before sending any analytics events. If the visitor has not given consent, events are not sent. Visitor ID generation and variant bucketing still happen (so the visitor sees a consistent experience), but no data is recorded.
 
-If you use a third-party consent management platform (OneTrust, Cookiebot, etc.), ensure that analytics consent is correctly communicated to Shopify's Customer Privacy API, which is what Split Tester reads.
+If you use a third-party consent management platform (OneTrust, Cookiebot, etc.), ensure that analytics consent is correctly communicated to Shopify's Customer Privacy API, which is what Arktic reads.
 
-### Does Split Tester slow down my store?
+### Does Arktic slow down my store?
 
-The performance impact is minimal by design. The script is served from Shopify's CDN, config is inlined in the page (no API call), and all tracking uses `navigator.sendBeacon` (non-blocking). In Lighthouse tests, Split Tester typically adds less than 50ms to Time to First Byte and does not affect Largest Contentful Paint or Cumulative Layout Shift.
+The performance impact is minimal by design. The script is served from Shopify's CDN, config is inlined in the page (no API call), and all tracking uses `navigator.sendBeacon` (non-blocking). In Lighthouse tests, Arktic typically adds less than 50ms to Time to First Byte and does not affect Largest Contentful Paint or Cumulative Layout Shift.
 
-### What happens if the Split Tester script errors?
+### What happens if the Arktic script errors?
 
 The embed includes a safety timeout. If something goes wrong during variant assignment (a JavaScript error, a network issue, an unexpected state), the page is revealed after 2 seconds regardless. Visitors will see the default experience. An error is logged to the console.
 
-### Does Split Tester work with Shopify's new checkout (one-page checkout)?
+### Does Arktic work with Shopify's new checkout (one-page checkout)?
 
 Yes. Order attribution uses the `orders/paid` webhook and cart attributes, which work regardless of which checkout version you use.
 
@@ -143,7 +143,7 @@ Not currently. The dashboard shows rollup-level data. Raw event export is on the
 
 Running experiments continue to run, but you may lose access to experiment types that require a higher plan tier. All historical data is preserved.
 
-### Can I install Split Tester on multiple stores?
+### Can I install Arktic on multiple stores?
 
 Yes. Each store requires a separate installation. Data is completely isolated between stores.
 

@@ -20,7 +20,7 @@ Shopify supports alternate templates via the `?view=` URL parameter. When `?view
 
 When a variant visitor loads a page matching the template type (e.g. any product page for a product template test):
 
-1. The Split Tester script checks if `?view=<suffix>` is already in the URL
+1. The Arktic script checks if `?view=<suffix>` is already in the URL
 2. If not, it redirects to the same URL with `?view=<suffix>` appended
 3. Shopify loads the alternate template and renders the page normally
 4. The redirect happens before the page is visible to the visitor — no flash
@@ -63,7 +63,7 @@ Name the new file by appending a suffix after the type:
 - `collection.json` → `collection.new-layout.json`
 - `page.json` → `page.redesign.json`
 
-The suffix (`my-test`, `new-layout`, `redesign`) is what you will enter in Split Tester. It can be any lowercase letters, numbers, or hyphens.
+The suffix (`my-test`, `new-layout`, `redesign`) is what you will enter in Arktic. It can be any lowercase letters, numbers, or hyphens.
 
 <Warning>
   Do not use spaces or special characters in your suffix. Stick to lowercase letters, numbers, and hyphens. The suffix becomes a URL parameter, so `product.My Test.json` would break URLs.
@@ -81,7 +81,7 @@ Make your layout changes:
 
 **Save** when done.
 
-### Step 3: Create the experiment in Split Tester
+### Step 3: Create the experiment in Arktic
 
 1. Go to **Experiments → New experiment**
 2. Select **Template** as the experiment type
@@ -137,7 +137,7 @@ Use a Template test when you want to redesign a specific page type. Use a Theme 
 If Shopify cannot find the alternate template file, it falls back to the default template silently. This means a misconfigured test (wrong suffix, deleted file) will not break the page — it will just show the default template for all visitors. Check that the file exists in your theme code if the variant is not applying.
 
 **The `?view=` parameter persists on navigation**
-When a visitor on the alternate template navigates to another page of the same type (e.g. from one product to another), the `?view=` parameter is preserved in the URL if they navigate via links that include it. The Split Tester script re-applies `?view=` on every product page load, so even if the parameter is dropped, it is added back.
+When a visitor on the alternate template navigates to another page of the same type (e.g. from one product to another), the `?view=` parameter is preserved in the URL if they navigate via links that include it. The Arktic script re-applies `?view=` on every product page load, so even if the parameter is dropped, it is added back.
 
 **Theme Editor shows alternate template in preview**
 When you open the alternate template in the Theme Editor, changes you make are isolated to that template. They do not affect the default template. This is expected behaviour.
