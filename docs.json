@@ -4,9 +4,9 @@
   "name": "Arktic",
   "description": "A/B split testing for Shopify. Run experiments on themes, prices, content, and more.",
   "colors": {
-    "primary": "#5b5bd6",
-    "light": "#7c7ce8",
-    "dark": "#4a4ab8"
+    "primary": "#111111",
+    "light": "#555555",
+    "dark": "#000000"
   },
   "favicon": "/favicon.ico",
   "icons": {
@@ -16,7 +16,11 @@
     "eyebrows": "breadcrumbs"
   },
   "contextual": {
-    "options": ["copy", "view", "assistant"]
+    "options": [
+      "copy",
+      "view",
+      "assistant"
+    ]
   },
   "navigation": {
     "global": {
@@ -99,7 +103,8 @@
   },
   "logo": {
     "light": "/logo/arktic-icon.png",
-    "dark": "/logo/arktic-icon.png"
+    "dark": "/logo/arktic-icon.png",
+    "width": 32
   },
   "navbar": {
     "links": [],
